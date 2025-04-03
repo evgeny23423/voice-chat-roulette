@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Голосовая чат-рулетка</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Голосовая чат-рулетка</h1>
+            <p class="status">Отключено</p>
+        </header>
+        
+        <main>
+            <div class="video-container">
+                <div class="user-video">
+                    <div class="avatar-placeholder">?</div>
+                    <p class="username">Ожидание собеседника...</p>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="startBtn" class="btn primary">Начать</button>
+                <button id="nextBtn" class="btn secondary" disabled>Следующий</button>
+                <button id="muteBtn" class="btn icon" disabled>
+                    <span class="icon-mic"></span>
+                </button>
+            </div>
+        </main>
+        
+        <footer>
+            <p>Правила: Будьте вежливы, не нарушайте законы</p>
+        </footer>
+    </div>
+    
+    <audio id="remoteAudio" autoplay></audio>
+    
+    <script src="app.js"></script>
+</body>
+</html>

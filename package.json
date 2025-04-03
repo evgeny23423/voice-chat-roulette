@@ -1,0 +1,14 @@
+{
+  "name": "chat-rulette",
+  "version": "1.0.0",
+  "scripts": {
+     "preinstall": "del package-lock.json && if exist node_modules rd /s /q node_modules",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "peer": "0.6.1",
+    "ws": "7.5.10",
+    "yargs": "15.4.1"
+  }
+}
