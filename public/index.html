@@ -1,43 +1,28 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-  <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Голосовая чат-рулетка</title>
-    <link rel="stylesheet" href="style.css">
+  <title>Голосовая чат-рулетка</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+    #controls { margin: 20px 0; }
+    button { padding: 10px 15px; margin-right: 10px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Голосовая чат-рулетка</h1>
-            <p class="status">Отключено</p>
-        </header>
-        
-        <main>
-            <div class="video-container">
-                <div class="user-video">
-                    <div class="avatar-placeholder">?</div>
-                    <p class="username">Ожидание собеседника...</p>
-                </div>
-            </div>
-            
-            <div class="controls">
-                <button id="startBtn" class="btn primary">Начать</button>
-                <button id="nextBtn" class="btn secondary" disabled>Следующий</button>
-                <button id="muteBtn" class="btn icon" disabled>
-                    <span class="icon-mic"></span>
-                </button>
-            </div>
-        </main>
-        
-        <footer>
-            <p>Правила: Будьте вежливы, не нарушайте законы</p>
-        </footer>
+  <h1>Голосовая чат-рулетка</h1>
+  <div>
+    <p>Ваш ID: <span id="myId">...</span></p>
+    <div id="controls">
+	<div id="status">Статус: <span id="statusText">Отключен</span></div>
+    <div id="partnerStatus">Собеседник: <span id="partnerStatusText">Нет</span>
+      <input type="text" id="partnerId" placeholder="ID собеседника">
+      <button id="callBtn">Позвонить</button>
+      <button id="hangupBtn">Завершить</button>
     </div>
-    
     <audio id="remoteAudio" autoplay></audio>
-    
-    <script src="app.js"></script>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
