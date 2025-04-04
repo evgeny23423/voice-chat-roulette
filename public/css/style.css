@@ -1,4 +1,3 @@
-/* Базовые стили */
 :root {
   --primary-color: #4285f4;
   --secondary-color: #f1f3f4;
@@ -24,6 +23,7 @@ body {
   color: var(--text-color);
   background-color: var(--bg-color);
   padding: 20px;
+  min-height: 100vh;
 }
 
 .container {
@@ -31,7 +31,15 @@ body {
   margin: 0 auto;
 }
 
-/* Панели */
+header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+h1 {
+  color: var(--primary-color);
+}
+
 .panel {
   background: var(--panel-bg);
   border-radius: 12px;
@@ -46,68 +54,7 @@ body {
   color: var(--text-secondary);
 }
 
-/* Кнопки */
-button {
-  cursor: pointer;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-primary {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.btn-secondary {
-  background-color: var(--secondary-color);
-  color: var(--text-color);
-}
-
-.btn-danger {
-  background-color: var(--danger-color);
-  color: white;
-}
-
-.btn-icon {
-  background: none;
-  padding: 8px;
-}
-
-button:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Поле ввода */
-input {
-  padding: 10px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  flex-grow: 1;
-}
-
-.input-group {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-/* ID пользователя */
-.id-display {
+.id-container {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -115,8 +62,15 @@ input {
   font-size: 1.1rem;
 }
 
-#copyIdBtn {
+#myId {
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.icon-btn {
   background: none;
+  border: none;
+  cursor: pointer;
   padding: 4px;
   border-radius: 50%;
   width: 28px;
@@ -126,11 +80,10 @@ input {
   justify-content: center;
 }
 
-#copyIdBtn:hover {
+.icon-btn:hover {
   background-color: rgba(0,0,0,0.1);
 }
 
-/* Статус соединения */
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -154,9 +107,61 @@ input {
   font-size: 1.2rem;
 }
 
-/* Спиннер поиска */
+.input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+input {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  flex-grow: 1;
+}
+
+.btn {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn.primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn.secondary {
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+}
+
+.btn.danger {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .spinner-container {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 10px;
   margin-top: 15px;
@@ -176,12 +181,7 @@ input {
   to { transform: rotate(360deg); }
 }
 
-/* Активный звонок */
-.active-call {
-  display: none;
-}
-
-.active-call .call-info {
+.call-info {
   margin-bottom: 15px;
   font-size: 1.1rem;
 }
@@ -191,4 +191,24 @@ input {
   gap: 10px;
 }
 
-/* Утилиты
+.hidden {
+  display: none !important;
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 10px;
+  }
+  
+  .panel {
+    padding: 15px;
+  }
+  
+  .input-group {
+    flex-direction: column;
+  }
+  
+  .btn, input {
+    width: 100%;
+  }
+}

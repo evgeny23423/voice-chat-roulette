@@ -1,10 +1,14 @@
 const express = require('express');
 const { PeerServer } = require('peer');
+const path = require('path');
 
 const app = express();
 const PORT = 9000;
 
-// PeerJS Server должен быть создан ДО использования
+// Middleware для статических файлов
+app.use(express.static(path.join(__dirname, 'public')));
+
+// PeerJS Server
 const peerServer = PeerServer({
   port: 9001,
   path: '/peerjs',
@@ -14,54 +18,59 @@ const peerServer = PeerServer({
 // Хранилище подключенных пиров
 const connectedPeers = new Set();
 
-// Обработка подключений PeerJS
+// Правильная обработка подключений (для PeerJS v1.4.7)
 peerServer.on('connection', (client) => {
-  connectedPeers.add(client.id);
-  console.log('Подключен:', client.id);
-  
-  client.on('close', () => {
-    connectedPeers.delete(client.id);
-    console.log('Отключен:', client.id);
-  });
+  // Используем getId() вместо прямого доступа к id
+  const clientId = client.getId();
+  connectedPeers.add(clientId);
+  console.log('Подключен:', clientId);
+
+  // Обработка отключения
+  const handleDisconnect = () => {
+    connectedPeers.delete(clientId);
+    console.log('Отключен:', clientId);
+  };
+
+  // Для разных версий PeerJS
+  if (client.on) {
+    client.on('close', handleDisconnect);
+    client.on('disconnect', handleDisconnect);
+  } else if (client.socket) {
+    client.socket.on('close', handleDisconnect);
+  }
 });
 
-// Middleware для статических файлов
-app.use(express.static('public'));
-
-// Обработка корневого маршрута
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
-});
-
-// Поиск случайного собеседника
+// API для поиска собеседника
 app.get('/find-partner', (req, res) => {
   const peers = Array.from(connectedPeers);
+  const requestId = req.query.myId;
   
-  // Улучшенный алгоритм матчинга
-  if (peers.length >= 2) {
-    // Исключаем свой собственный ID из поиска
-    const requestId = req.query.myId;
-    const availablePeers = peers.filter(id => id !== requestId);
-    
-    if (availablePeers.length > 0) {
-      const randomIndex = Math.floor(Math.random() * availablePeers.length);
-      return res.json({ 
-        partnerId: availablePeers[randomIndex],
-        availablePeers: availablePeers.length
-      });
-    }
+  const availablePeers = peers.filter(id => id !== requestId);
+  
+  if (availablePeers.length > 0) {
+    const randomIndex = Math.floor(Math.random() * availablePeers.length);
+    return res.json({
+      partnerId: availablePeers[randomIndex],
+      availablePeers: availablePeers.length
+    });
   }
   
-  res.json({ 
+  res.json({
     error: 'Нет доступных собеседников',
     availablePeers: peers.length
   });
 });
 
-// Запуск основного сервера
+// Корневой маршрут
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 app.listen(PORT, () => {
-  console.log(`\nСервер запущен:`);
-  console.log(`- Веб-интерфейс: http://localhost:${PORT}`);
-  console.log(`- PeerJS сервер: http://localhost:9001/peerjs`);
-  console.log(`- API поиска: http://localhost:${PORT}/find-partner?myId=YOUR_ID\n`);
+  console.log(`
+  Сервер запущен:
+  - Веб-интерфейс: http://localhost:${PORT}
+  - PeerJS сервер: http://localhost:9001/peerjs
+  - API поиска: http://localhost:${PORT}/find-partner?myId=YOUR_ID
+  `);
 });

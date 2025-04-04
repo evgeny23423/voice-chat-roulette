@@ -1,25 +1,71 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Голосовая чат-рулетка</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
-    #controls { margin: 20px 0; }
-    button { padding: 10px 15px; margin-right: 10px; }
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Голосовая чат-рулетка</h1>
-  <div>
-    <p>Ваш ID: <span id="myId">...</span></p>
-    <div id="controls">
-	<div id="status">Статус: <span id="statusText">Отключен</span></div>
-    <div id="partnerStatus">Собеседник: <span id="partnerStatusText">Нет</span>
-      <input type="text" id="partnerId" placeholder="ID собеседника">
-      <button id="callBtn">Позвонить</button>
-      <button id="hangupBtn">Завершить</button>
-    </div>
-    <audio id="remoteAudio" autoplay></audio>
+  <div class="container">
+    <header>
+      <h1>🎤 Голосовая чат-рулетка</h1>
+    </header>
+
+    <main>
+      <div class="panel user-panel">
+        <h2>Ваш профиль</h2>
+        <div class="id-container">
+          <span>ID:</span>
+          <strong id="myId">...</strong>
+          <button id="copyIdBtn" class="icon-btn" title="Копировать ID">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+              <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="status" class="status-badge disconnected">
+          <span class="status-icon">●</span>
+          <span class="status-text">Отключен</span>
+        </div>
+      </div>
+
+      <div class="panel controls-panel">
+        <h2>Управление звонком</h2>
+        <div class="input-group">
+          <input type="text" id="partnerId" placeholder="Введите ID собеседника">
+          <button id="callBtn" class="btn primary">Позвонить</button>
+        </div>
+        <button id="findRandomBtn" class="btn secondary">
+          <span class="btn-icon">🔍</span>
+          Найти случайного
+        </button>
+        <div id="searchSpinner" class="spinner-container hidden">
+          <div class="spinner"></div>
+          <span>Ищем собеседника...</span>
+        </div>
+      </div>
+
+      <div id="activeCallPanel" class="panel call-panel hidden">
+        <h2>Текущий звонок</h2>
+        <div class="call-info">
+          <span>Собеседник:</span>
+          <strong id="partnerIdDisplay">Не указан</strong>
+        </div>
+        <div class="call-actions">
+          <button id="muteBtn" class="btn icon-btn">
+            <span class="icon">🔇</span>
+            <span class="text">Выключить звук</span>
+          </button>
+          <button id="hangupBtn" class="btn danger">
+            <span class="icon">📞</span>
+            <span class="text">Завершить</span>
+          </button>
+        </div>
+        <audio id="remoteAudio" autoplay></audio>
+      </div>
+    </main>
   </div>
 
   <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>

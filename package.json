@@ -1,14 +1,17 @@
 {
-  "name": "chat-rulette",
+  "name": "voice-chat-roulette",
   "version": "1.0.0",
+  "description": "Голосовая чат-рулетка с PeerJS",
+  "main": "server.js",
   "scripts": {
-    "preinstall": "del package-lock.json && if exist node_modules rd /s /q node_modules",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "express": "^4.21.2",
-    "peer": "^0.6.1",
-    "ws": "7.5.10",
-    "yargs": "15.4.1"
+    "express": "^4.18.2",
+    "peer": "^0.6.1"
+  },
+  "engines": {
+    "node": ">=18.x"
   }
 }
