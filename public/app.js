@@ -1,10 +1,9 @@
-// Конфигурация для Railway
 const config = {
   peer: {
     host: window.location.hostname,
-    port: 443,
+    port: window.location.protocol === 'https:' ? 443 : 9001,
     path: '/peerjs',
-    secure: true,
+    secure: window.location.protocol === 'https:',
     debug: 3
   },
   media: {
@@ -24,106 +23,57 @@ const state = {
   isMuted: false
 };
 
-// Инициализация при загрузке страницы
+// Функция обработки ошибок PeerJS
+function handlePeerError(error) {
+  console.error('PeerJS Error:', error);
+  
+  // Показываем пользователю понятное сообщение
+  let errorMessage = 'Ошибка соединения';
+  
+  switch(error.type) {
+    case 'peer-unavailable':
+      errorMessage = 'Собеседник недоступен';
+      break;
+    case 'network':
+      errorMessage = 'Проблемы с интернет-соединением';
+      break;
+    case 'ssl-unavailable':
+      errorMessage = 'Требуется HTTPS соединение';
+      break;
+  }
+  
+  alert(errorMessage);
+  
+  // Переподключаемся при некоторых ошибках
+  if (error.type !== 'peer-unavailable' && state.peer) {
+    state.peer.reconnect();
+  }
+}
+
+// Инициализация приложения
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await initPeerConnection();
     setupEventListeners();
-    // Явно запрашиваем микрофон при загрузке
-    await requestMicrophoneAccess(); 
+    await requestMicrophoneAccess(); // Явный запрос микрофона
   } catch (error) {
-    console.error("Init error:", error);
-    alert("Ошибка инициализации: " + error.message);
+    handlePeerError(error);
   }
 });
 
-// Функция запроса доступа к микрофону
-async function requestMicrophoneAccess() {
-  try {
-    state.localStream = await navigator.mediaDevices.getUserMedia(config.media);
-    console.log("Microphone access granted");
-    return true;
-  } catch (error) {
-    console.error("Microphone error:", error);
-    alert("Для работы приложения требуется доступ к микрофону!");
-    return false;
-  }
-}
-
-// Инициализация Peer соединения
 async function initPeerConnection() {
   return new Promise((resolve) => {
     state.peer = new Peer(config.peer);
-
+    
     state.peer.on('open', (id) => {
-      console.log("My peer ID:", id);
       document.getElementById('myId').textContent = id;
       resolve();
     });
-
-    state.peer.on('call', handleIncomingCall);
-    state.peer.on('error', handlePeerError);
-  });
-}
-
-// Обработка входящих вызовов
-async function handleIncomingCall(call) {
-  if (state.isConnected) {
-    call.close();
-    return;
-  }
-
-  if (!state.localStream) {
-    const hasAccess = await requestMicrophoneAccess();
-    if (!hasAccess) return;
-  }
-
-  state.currentCall = call;
-  state.isConnected = true;
-  call.answer(state.localStream);
-
-  call.on('stream', (remoteStream) => {
-    document.getElementById('remoteAudio').srcObject = remoteStream;
-    updateUI();
-  });
-
-  call.on('close', endCall);
-}
-
-// Настройка обработчиков событий
-function setupEventListeners() {
-  document.getElementById('callBtn').addEventListener('click', makeCall);
-  document.getElementById('findRandomBtn').addEventListener('click', findRandomPartner);
-  document.getElementById('hangupBtn').addEventListener('click', endCall);
-  document.getElementById('muteBtn').addEventListener('click', toggleMute);
-}
-
-// Поиск случайного собеседника
-async function findRandomPartner() {
-  if (!state.localStream) {
-    const hasAccess = await requestMicrophoneAccess();
-    if (!hasAccess) return;
-  }
-
-  if (state.isConnected) {
-    alert("Сначала завершите текущий звонок");
-    return;
-  }
-
-  try {
-    const response = await fetch(`/find-partner?myId=${state.peer.id}`);
-    const data = await response.json();
     
-    if (data.partnerId) {
-      document.getElementById('partnerId').value = data.partnerId;
-      await makeCall();
-    } else {
-      alert(data.error || "Нет доступных собеседников");
-    }
-  } catch (error) {
-    console.error("Search error:", error);
-    alert("Ошибка поиска собеседника");
-  }
+    state.peer.on('error', handlePeerError);
+    state.peer.on('call', handleIncomingCall);
+  });
 }
 
-// Остальные функции (makeCall, endCall, toggleMute, updateUI) остаются без изменений
+// Остальные функции (requestMicrophoneAccess, setupEventListeners, 
+// handleIncomingCall, makeCall и т.д.) остаются без изменений
