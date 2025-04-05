@@ -1,16 +1,15 @@
 const config = {
   peer: {
-    host: 'https://web-production-175e.up.railway.app', // Замените на ваш домен Railway
+    host: 'web-production-175e.up.railway.app', // Ваш реальный домен Railway
     port: 443,
     path: '/peerjs',
     secure: true,
-    debug: 3
-  },
-  media: {
-    audio: {
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true
+    debug: 3,
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:global.stun.twilio.com:3478' }
+      ]
     }
   }
 };
@@ -23,13 +22,36 @@ const state = {
   isMuted: false
 };
 
-// Инициализация PeerJS с обработкой ошибок
-function initPeerConnection() {
-  return new Promise((resolve, reject) => {
-    state.peer = new Peer(config.peer);
+// Проверка доступности сервера
+async function checkServerAvailability() {
+  try {
+    const response = await fetch('https://web-production-175e.up.railway.app/health');
+    if (!response.ok) throw new Error('Server not healthy');
+    return true;
+  } catch (error) {
+    console.error('Server check failed:', error);
+    return false;
+  }
+}
+
+// Инициализация PeerJS с улучшенной обработкой ошибок
+async function initPeerConnection() {
+  return new Promise((resolve) => {
+    state.peer = new Peer({
+      host: 'web-production-175e.up.railway.app',
+      port: 443,
+      path: '/peerjs',
+      secure: true,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' }
+        ]
+      }
+    });
 
     state.peer.on('open', (id) => {
-      console.log('Peer ID:', id);
+      console.log('PeerID:', id);
       document.getElementById('myId').textContent = id;
       resolve();
     });
@@ -37,41 +59,40 @@ function initPeerConnection() {
     state.peer.on('error', (error) => {
       console.error('PeerJS Error:', error);
       
-      // Специфичные сообщения для разных ошибок
-      let message = 'Ошибка соединения';
-      if (error.type === 'network') {
-        message = 'Проблемы с интернет-соединением';
-      } else if (error.type === 'peer-unavailable') {
-        message = 'Сервер недоступен';
+      // Автоматический реконнект при определенных ошибках
+      if (['network', 'server-error'].includes(error.type)) {
+        setTimeout(initPeerConnection, 2000);
       }
-      
-      alert(message);
-      reject(error);
     });
   });
 }
 
-// Проверка соединения перед инициализацией
-async function checkConnection() {
+// Запрос доступа к микрофону
+async function requestMicrophone() {
   try {
-    const response = await fetch('https://web-production-175e.up.railway.app');
-    if (!response.ok) throw new Error('Server not ready');
+    state.localStream = await navigator.mediaDevices.getUserMedia({ 
+      audio: true,
+      video: false
+    });
     return true;
   } catch (error) {
-    console.error('Connection check failed:', error);
-    alert('Сервер временно недоступен. Попробуйте позже.');
+    console.error('Microphone error:', error);
     return false;
   }
 }
 
 // Основная инициализация
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!await checkConnection()) return;
+  if (!await checkServerAvailability()) {
+    alert('Сервер временно недоступен. Попробуйте позже.');
+    return;
+  }
 
   try {
     await initPeerConnection();
+    await requestMicrophone();
     setupEventListeners();
   } catch (error) {
-    console.error('Initialization failed:', error);
+    console.error('App initialization failed:', error);
   }
 });
