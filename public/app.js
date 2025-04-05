@@ -54,7 +54,7 @@ function initPeerConnection() {
 // Проверка соединения перед инициализацией
 async function checkConnection() {
   try {
-    const response = await fetch('https://ваш-проект.up.railway.app/health');
+    const response = await fetch('https://web-production-175e.up.railway.app');
     if (!response.ok) throw new Error('Server not ready');
     return true;
   } catch (error) {
