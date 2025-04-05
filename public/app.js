@@ -1,9 +1,9 @@
 const config = {
   peer: {
-    host: window.location.hostname,
-    port: window.location.protocol === 'https:' ? 443 : 9001,
+    host: 'https://web-production-175e.up.railway.app', // Замените на ваш домен Railway
+    port: 443,
     path: '/peerjs',
-    secure: window.location.protocol === 'https:',
+    secure: true,
     debug: 3
   },
   media: {
@@ -23,57 +23,55 @@ const state = {
   isMuted: false
 };
 
-// Функция обработки ошибок PeerJS
-function handlePeerError(error) {
-  console.error('PeerJS Error:', error);
-  
-  // Показываем пользователю понятное сообщение
-  let errorMessage = 'Ошибка соединения';
-  
-  switch(error.type) {
-    case 'peer-unavailable':
-      errorMessage = 'Собеседник недоступен';
-      break;
-    case 'network':
-      errorMessage = 'Проблемы с интернет-соединением';
-      break;
-    case 'ssl-unavailable':
-      errorMessage = 'Требуется HTTPS соединение';
-      break;
-  }
-  
-  alert(errorMessage);
-  
-  // Переподключаемся при некоторых ошибках
-  if (error.type !== 'peer-unavailable' && state.peer) {
-    state.peer.reconnect();
-  }
-}
-
-// Инициализация приложения
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    await initPeerConnection();
-    setupEventListeners();
-    await requestMicrophoneAccess(); // Явный запрос микрофона
-  } catch (error) {
-    handlePeerError(error);
-  }
-});
-
-async function initPeerConnection() {
-  return new Promise((resolve) => {
+// Инициализация PeerJS с обработкой ошибок
+function initPeerConnection() {
+  return new Promise((resolve, reject) => {
     state.peer = new Peer(config.peer);
-    
+
     state.peer.on('open', (id) => {
+      console.log('Peer ID:', id);
       document.getElementById('myId').textContent = id;
       resolve();
     });
-    
-    state.peer.on('error', handlePeerError);
-    state.peer.on('call', handleIncomingCall);
+
+    state.peer.on('error', (error) => {
+      console.error('PeerJS Error:', error);
+      
+      // Специфичные сообщения для разных ошибок
+      let message = 'Ошибка соединения';
+      if (error.type === 'network') {
+        message = 'Проблемы с интернет-соединением';
+      } else if (error.type === 'peer-unavailable') {
+        message = 'Сервер недоступен';
+      }
+      
+      alert(message);
+      reject(error);
+    });
   });
 }
 
-// Остальные функции (requestMicrophoneAccess, setupEventListeners, 
-// handleIncomingCall, makeCall и т.д.) остаются без изменений
+// Проверка соединения перед инициализацией
+async function checkConnection() {
+  try {
+    const response = await fetch('https://ваш-проект.up.railway.app/health');
+    if (!response.ok) throw new Error('Server not ready');
+    return true;
+  } catch (error) {
+    console.error('Connection check failed:', error);
+    alert('Сервер временно недоступен. Попробуйте позже.');
+    return false;
+  }
+}
+
+// Основная инициализация
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await checkConnection()) return;
+
+  try {
+    await initPeerConnection();
+    setupEventListeners();
+  } catch (error) {
+    console.error('Initialization failed:', error);
+  }
+});

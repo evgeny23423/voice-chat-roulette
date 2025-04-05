@@ -70,3 +70,27 @@ process.on('unhandledRejection', (error) => {
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
 });
+
+// Critical CORS configuration
+app.use(cors({
+  origin: ['https://ваш-проект.up.railway.app'], // Ваш домен
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
+
+// PeerJS Server Configuration
+const peerServer = PeerServer({
+  port: process.env.PEER_PORT || 9001,
+  path: '/peerjs',
+  proxied: true,
+  ssl: {}, // Required for Railway
+  allow_discovery: true
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    peers: Array.from(peerServer._clients.keys()).length
+  });
+});
