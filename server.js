@@ -1,3 +1,9 @@
+// Добавьте этот middleware в начало
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+});
 const express = require('express');
 const { PeerServer } = require('peer');
 const cors = require('cors');
@@ -10,6 +16,11 @@ const PORT = process.env.PORT || 9000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+});
 
 // PeerJS Server
 const peerServer = PeerServer({
@@ -20,17 +31,15 @@ const peerServer = PeerServer({
 
 const connectedPeers = new Set();
 
+/ Измените обработку Peer соединений
 peerServer.on('connection', (client) => {
   const clientId = client.id;
-  connectedPeers.add(clientId);
   console.log('Peer connected:', clientId);
-
-  client.on('close', () => {
-    connectedPeers.delete(clientId);
+  
+  client.on('disconnected', () => {
     console.log('Peer disconnected:', clientId);
   });
 });
-
 // API Endpoints
 app.get('/find-partner', (req, res) => {
   const peers = Array.from(connectedPeers);
