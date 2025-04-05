@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 9000;
 
 // Critical CORS configuration - должно быть в начале!
 app.use(cors({
-  origin: ['https://ваш-проект.up.railway.app'], // Замените на ваш домен
+  origin: ['https://web-production-175e.up.railway.app'], // Замените на ваш домен
   methods: ['GET', 'POST'],
   credentials: true
 }));
