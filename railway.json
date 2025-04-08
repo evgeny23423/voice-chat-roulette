@@ -2,7 +2,21 @@
   "build": {
     "builder": "nixpacks",
     "config": {
-      "startCommand": "node server.js"
+      "startCommand": "node server.js",
+      "installCommand": "npm install --legacy-peer-deps",
+      "nodeVersion": "18",
+      "cacheVersion": "v3",
+      "environment": {
+        "NODE_ENV": "production",
+        "PORT": "9000",
+        "PEER_PORT": "9001",
+        "STUN_SERVER": "stun:stun.l.google.com:19302"
+      }
     }
+  },
+  "deploy": {
+    "startTimeout": 180000,
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 10000
   }
 }
