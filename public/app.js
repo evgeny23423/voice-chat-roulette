@@ -1,10 +1,11 @@
-// Конфигурация и состояние
-const peer = new Peer({
-  host: "web-production-445a9.up.railway.app", // Ваш домен Railway
-  port: 443,
-  path: '/peerjs',
-  secure: true
-},
+const config = {
+  peerConfig: {
+    host: window.location.hostname, // Автоподстановка
+    port: window.location.protocol === 'https:' ? 443 : 9001,
+    path: '/peerjs',
+    secure: window.location.protocol === 'https:',
+    debug: 3
+  },
   audioConstraints: {
     audio: {
       echoCancellation: true,
