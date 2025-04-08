@@ -2,47 +2,36 @@ const express = require('express');
 const { PeerServer } = require('peer');
 const cors = require('cors');
 const path = require('path');
-const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 9000;
-<<<<<<< HEAD
+const PEER_PORT = process.env.PEER_PORT || 9001;
 
 // Middleware
-app.use(cors());
-=======
 app.use(cors({
   origin: [
     'https://web-production-175e.up.railway.app',
-    'http://localhost:9000' // для локального тестирования
+    'http://localhost:9000'
   ],
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type'],
   credentials: true
 }));
-
 app.use(express.json());
->>>>>>> ee5044a24df45e10ca3cd4547755ba5fdb3c99f3
 app.use(express.static(path.join(__dirname, 'public')));
 
-// PeerJS Server Configuration (единственный экземпляр!)
 const peerServer = PeerServer({
   port: process.env.PEER_PORT || 9001,
   path: '/peerjs',
-  proxied: true,
-  ssl: {}, // Обязательно для Railway
-  allow_discovery: true
+  proxied: true,  // Критически важно для Railway
+  ssl: {},        // Активирует HTTPS
+  allow_discovery: true,
+  key: 'peerjs',  // Фиксированный ключ безопасности
+  concurrent_limit: 1000,
+  alive_timeout: 60000  // Таймаут соединения
 });
 
-<<<<<<< HEAD
-// API endpoint
-app.get('/find-partner', (req, res) => {
-  // Ваша логика поиска собеседника
-  res.json({ partnerId: 'some-peer-id' });
-=======
 const connectedPeers = new Set();
 
-// Обработка подключений PeerJS
 peerServer.on('connection', (client) => {
   try {
     const clientId = client.id;
@@ -63,7 +52,7 @@ peerServer.on('connection', (client) => {
   }
 });
 
-// API для поиска собеседника
+// API endpoints
 app.get('/find-partner', (req, res) => {
   try {
     const peers = Array.from(connectedPeers);
@@ -90,38 +79,54 @@ app.get('/find-partner', (req, res) => {
   }
 });
 
-// Health check endpoint (один!)
-app.get('/health', (req, res) => {
+app.get('/peerjs/health', (req, res) => {
   res.json({
     status: 'OK',
     peers: connectedPeers.size,
     uptime: process.uptime()
   });
->>>>>>> ee5044a24df45e10ca3cd4547755ba5fdb3c99f3
 });
 
-// Serve frontend
+
+// Frontend
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-<<<<<<< HEAD
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-=======
 // Error handling
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Server start
-app.listen(PORT, '0.0.0.0', () => {
+// Start servers
+const webServer = app.listen(PORT, '0.0.0.0', () => {
   console.log(`
   Server is running:
   - Web: http://localhost:${PORT}
-  - PeerJS: ws://localhost:${process.env.PEER_PORT || 9001}/peerjs
+  - PeerJS: wss://web-production-175e.up.railway.app/peerjs
+  - Health: https://web-production-175e.up.railway.app/health
   `);
+});
+// В app.js
+function setupSocketReconnect() {
+  const socket = state.peer.socket;
+  
+  socket.on('close', () => {
+    if (!state.peer.disconnected) {
+      console.log('WebSocket closed, reconnecting...');
+      setTimeout(initPeerConnection, 1000);
+    }
+  });
+};
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
+  webServer.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
 });
 
 process.on('unhandledRejection', (err) => {
@@ -130,5 +135,5 @@ process.on('unhandledRejection', (err) => {
 
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
->>>>>>> ee5044a24df45e10ca3cd4547755ba5fdb3c99f3
+  process.exit(1);
 });
