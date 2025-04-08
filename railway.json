@@ -6,3 +6,12 @@
     }
   }
 }
+{
+  "build": {
+    "config": {
+      "environment": {
+        "ENABLE_WEBSOCKETS": "true"
+      }
+    }
+  }
+}

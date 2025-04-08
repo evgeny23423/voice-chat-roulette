@@ -1,4 +1,5 @@
 const config = {
+<<<<<<< HEAD
   peerConfig: {
     host: window.location.hostname, // Автоподстановка
     port: window.location.protocol === 'https:' ? 443 : 9001,
@@ -11,256 +12,102 @@ const config = {
       echoCancellation: true,
       noiseSuppression: true,
       autoGainControl: true
+=======
+  peer: {
+    host: 'web-production-175e.up.railway.app', // Ваш реальный домен Railway
+    port: 443,
+    path: '/peerjs',
+    secure: true,
+    debug: 3,
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:global.stun.twilio.com:3478' }
+      ]
+>>>>>>> ee5044a24df45e10ca3cd4547755ba5fdb3c99f3
     }
   }
 };
 
-const appState = {
+const state = {
   peer: null,
   currentCall: null,
   localStream: null,
   isConnected: false,
-  isMuted: false,
-  partnerId: null
+  isMuted: false
 };
 
-// Инициализация приложения
-document.addEventListener('DOMContentLoaded', () => {
-  initPeerConnection();
-  setupEventListeners();
-  restoreSession();
-});
-
-// Основные функции
-function initPeerConnection() {
-  appState.peer = new Peer(config.peerConfig);
-
-  appState.peer.on('open', id => {
-    console.log('My Peer ID:', id);
-    document.getElementById('myId').textContent = id;
-    localStorage.setItem('peerId', id);
-  });
-
-  appState.peer.on('call', handleIncomingCall);
-  appState.peer.on('error', handlePeerError);
-  appState.peer.on('disconnected', reconnectPeer);
-}
-
-async function setupAudio() {
+// Проверка доступности сервера
+async function checkServerAvailability() {
   try {
-    appState.localStream = await navigator.mediaDevices.getUserMedia(config.audioConstraints);
-    console.log('Microphone access granted');
+    const response = await fetch('https://web-production-175e.up.railway.app/health');
+    if (!response.ok) throw new Error('Server not healthy');
+    return true;
   } catch (error) {
-    console.error('Microphone error:', error);
-    showAlert('Не удалось получить доступ к микрофону');
+    console.error('Server check failed:', error);
+    return false;
   }
 }
 
-function setupEventListeners() {
-  document.getElementById('callBtn').addEventListener('click', makeCall);
-  document.getElementById('hangupBtn').addEventListener('click', endCall);
-  document.getElementById('muteBtn').addEventListener('click', toggleMute);
-  document.getElementById('findRandomBtn').addEventListener('click', findPartner);
-  
-  window.addEventListener('beforeunload', cleanupOnExit);
-  window.addEventListener('online', handleNetworkOnline);
-}
-
-// Обработчики событий
-async function handleIncomingCall(call) {
-  if (appState.isConnected) {
-    call.close();
-    return;
-  }
-
-  if (!appState.localStream) {
-    try {
-      await setupAudio();
-    } catch (error) {
-      showAlert('Требуется доступ к микрофону');
-      return;
-    }
-  }
-
-  appState.currentCall = call;
-  appState.partnerId = call.peer;
-  appState.isConnected = true;
-  
-  call.answer(appState.localStream);
-  updateUI();
-
-  call.on('stream', remoteStream => {
-    document.getElementById('remoteAudio').srcObject = remoteStream;
-  });
-
-  call.on('close', endCall);
-  call.on('error', handleCallError);
-}
-
-async function makeCall() {
-  const partnerId = document.getElementById('partnerId').value.trim();
-  
-  if (!partnerId) {
-    showAlert('Введите ID собеседника');
-    return;
-  }
-
-  if (partnerId === appState.peer.id) {
-    showAlert('Нельзя звонить самому себе');
-    return;
-  }
-
-  if (!appState.localStream) {
-    try {
-      await setupAudio();
-    } catch (error) {
-      return;
-    }
-  }
-
-  if (appState.isConnected) {
-    endCall();
-  }
-
-  try {
-    appState.currentCall = appState.peer.call(partnerId, appState.localStream);
-    appState.partnerId = partnerId;
-    appState.isConnected = true;
-    updateUI();
-
-    appState.currentCall.on('stream', remoteStream => {
-      document.getElementById('remoteAudio').srcObject = remoteStream;
+// Инициализация PeerJS с улучшенной обработкой ошибок
+async function initPeerConnection() {
+  return new Promise((resolve) => {
+    state.peer = new Peer({
+      host: 'web-production-175e.up.railway.app',
+      port: 443,
+      path: '/peerjs',
+      secure: true,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' }
+        ]
+      }
     });
 
-    appState.currentCall.on('close', endCall);
-    appState.currentCall.on('error', handleCallError);
-  } catch (error) {
-    console.error('Call failed:', error);
-    showAlert('Не удалось установить соединение');
-  }
-}
+    state.peer.on('open', (id) => {
+      console.log('PeerID:', id);
+      document.getElementById('myId').textContent = id;
+      resolve();
+    });
 
-function endCall() {
-  if (appState.currentCall) {
-    appState.currentCall.close();
-  }
-  
-  resetCallState();
-  updateUI();
-}
-
-function toggleMute() {
-  if (!appState.localStream) return;
-  
-  appState.isMuted = !appState.isMuted;
-  appState.localStream.getAudioTracks().forEach(track => {
-    track.enabled = !appState.isMuted;
+    state.peer.on('error', (error) => {
+      console.error('PeerJS Error:', error);
+      
+      // Автоматический реконнект при определенных ошибках
+      if (['network', 'server-error'].includes(error.type)) {
+        setTimeout(initPeerConnection, 2000);
+      }
+    });
   });
-  
-  updateUI();
 }
 
-// Вспомогательные функции
-async function findPartner() {
-  if (appState.isConnected) {
-    showAlert('Сначала завершите текущий разговор');
+// Запрос доступа к микрофону
+async function requestMicrophone() {
+  try {
+    state.localStream = await navigator.mediaDevices.getUserMedia({ 
+      audio: true,
+      video: false
+    });
+    return true;
+  } catch (error) {
+    console.error('Microphone error:', error);
+    return false;
+  }
+}
+
+// Основная инициализация
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await checkServerAvailability()) {
+    alert('Сервер временно недоступен. Попробуйте позже.');
     return;
   }
 
-  showLoader(true);
-
   try {
-    const response = await fetch(`/find-partner?myId=${appState.peer.id}`);
-    const data = await response.json();
-    
-    if (data.partnerId) {
-      document.getElementById('partnerId').value = data.partnerId;
-      makeCall();
-    } else {
-      showAlert(`${data.error || 'Нет доступных собеседников'} (Онлайн: ${data.availablePeers || 0})`);
-    }
+    await initPeerConnection();
+    await requestMicrophone();
+    setupEventListeners();
   } catch (error) {
-    console.error('Partner search failed:', error);
-    showAlert('Ошибка соединения с сервером');
-  } finally {
-    showLoader(false);
+    console.error('App initialization failed:', error);
   }
-}
-
-function updateUI() {
-  const statusElement = document.getElementById('status');
-  const hangupBtn = document.getElementById('hangupBtn');
-  const muteBtn = document.getElementById('muteBtn');
-  const partnerInfo = document.getElementById('partnerInfo');
-
-  if (appState.isConnected) {
-    statusElement.textContent = `🟢 В разговоре с ${appState.partnerId}`;
-    statusElement.className = 'status connected';
-    hangupBtn.disabled = false;
-    partnerInfo.style.display = 'block';
-    document.getElementById('partnerIdDisplay').textContent = appState.partnerId;
-  } else {
-    statusElement.textContent = '🔴 Не подключено';
-    statusElement.className = 'status disconnected';
-    hangupBtn.disabled = true;
-    partnerInfo.style.display = 'none';
-  }
-
-  muteBtn.textContent = appState.isMuted ? '🔈 Включить звук' : '🔇 Выключить звук';
-}
-
-function resetCallState() {
-  document.getElementById('remoteAudio').srcObject = null;
-  appState.currentCall = null;
-  appState.isConnected = false;
-  appState.partnerId = null;
-}
-
-// Обработчики ошибок
-function handlePeerError(error) {
-  console.error('PeerJS Error:', error);
-  showAlert(`Ошибка соединения: ${error.type}`);
-}
-
-function handleCallError(error) {
-  console.error('Call Error:', error);
-  showAlert('Ошибка в соединении');
-  endCall();
-}
-
-function reconnectPeer() {
-  console.log('Attempting to reconnect...');
-  initPeerConnection();
-}
-
-// Утилиты
-function showAlert(message) {
-  alert(message);
-}
-
-function showLoader(show) {
-  document.getElementById('searchSpinner').style.display = show ? 'block' : 'none';
-}
-
-function restoreSession() {
-  const savedId = localStorage.getItem('peerId');
-  if (savedId) {
-    document.getElementById('myId').textContent = savedId;
-  }
-}
-
-function cleanupOnExit() {
-  if (appState.currentCall) {
-    appState.currentCall.close();
-  }
-  if (appState.peer && !appState.peer.destroyed) {
-    appState.peer.destroy();
-  }
-}
-
-function handleNetworkOnline() {
-  console.log('Connection restored');
-  if (appState.peer.destroyed) {
-    initPeerConnection();
-  }
-}
+});

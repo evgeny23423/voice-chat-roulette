@@ -3,69 +3,103 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Голосовая чат-рулетка</title>
+  <title>🎤 Voice Roulette - Голосовая чат-рулетка</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>🎤 Голосовая чат-рулетка</h1>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="logo-container">
+        <div class="logo-icon">🎤</div>
+        <h1>Voice Roulette</h1>
+      </div>
+      <p class="app-subtitle">Анонимные голосовые знакомства</p>
     </header>
 
-    <main>
-      <div class="panel user-panel">
-        <h2>Ваш профиль</h2>
-        <div class="id-container">
-          <span>ID:</span>
-          <strong id="myId">...</strong>
-          <button id="copyIdBtn" class="icon-btn" title="Копировать ID">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <rect x="8" y="8" width="12" height="12" rx="2"></rect>
-              <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
-            </svg>
-          </button>
+    <main class="app-content">
+      <section class="profile-card card">
+        <div class="card-header">
+          <h2>Ваш профиль</h2>
+          <div class="status-badge" id="status">
+            <span class="status-dot"></span>
+            <span class="status-text">Отключен</span>
+          </div>
         </div>
-        <div id="status" class="status-badge disconnected">
-          <span class="status-icon">●</span>
-          <span class="status-text">Отключен</span>
+        <div class="profile-content">
+          <div class="id-display">
+            <span class="id-label">Ваш ID:</span>
+            <div class="id-value-container">
+              <code id="myId">Загрузка...</code>
+              <button id="copyIdBtn" class="icon-button" aria-label="Копировать ID">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+                  <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div class="panel controls-panel">
-        <h2>Управление звонком</h2>
-        <div class="input-group">
-          <input type="text" id="partnerId" placeholder="Введите ID собеседника">
-          <button id="callBtn" class="btn primary">Позвонить</button>
+      <section class="call-controls card">
+        <div class="card-header">
+          <h2>Начать общение</h2>
         </div>
-        <button id="findRandomBtn" class="btn secondary">
-          <span class="btn-icon">🔍</span>
-          Найти случайного
-        </button>
-        <div id="searchSpinner" class="spinner-container hidden">
-          <div class="spinner"></div>
-          <span>Ищем собеседника...</span>
+        <div class="controls-content">
+          <div class="input-with-button">
+            <input type="text" id="partnerId" placeholder="Введите ID собеседника" class="text-input">
+            <button id="callBtn" class="primary-button">
+              <span class="button-icon">📞</span>
+              Позвонить
+            </button>
+          </div>
+          <div class="divider">
+            <span>или</span>
+          </div>
+          <button id="findRandomBtn" class="secondary-button large-button">
+            <span class="button-icon">🎲</span>
+            Найти случайного собеседника
+          </button>
+          <div id="searchSpinner" class="search-loader hidden">
+            <div class="spinner"></div>
+            <span>Ищем интересного собеседника...</span>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div id="activeCallPanel" class="panel call-panel hidden">
-        <h2>Текущий звонок</h2>
-        <div class="call-info">
-          <span>Собеседник:</span>
-          <strong id="partnerIdDisplay">Не указан</strong>
+      <section id="activeCallPanel" class="active-call card hidden">
+        <div class="card-header">
+          <h2>Текущий звонок</h2>
         </div>
-        <div class="call-actions">
-          <button id="muteBtn" class="btn icon-btn">
-            <span class="icon">🔇</span>
-            <span class="text">Выключить звук</span>
-          </button>
-          <button id="hangupBtn" class="btn danger">
-            <span class="icon">📞</span>
-            <span class="text">Завершить</span>
-          </button>
+        <div class="call-content">
+          <div class="call-info">
+            <div class="info-item">
+              <span class="info-label">Собеседник:</span>
+              <span id="partnerIdDisplay" class="info-value">Не указан</span>
+            </div>
+            <div class="call-timer">
+              <span id="callDuration">00:00</span>
+            </div>
+          </div>
+          <div class="call-actions">
+            <button id="muteBtn" class="icon-button large">
+              <span class="button-icon">🎤</span>
+              <span class="button-text">Вкл/Выкл микрофон</span>
+            </button>
+            <button id="hangupBtn" class="danger-button">
+              <span class="button-icon">📞</span>
+              Завершить звонок
+            </button>
+          </div>
+          <audio id="remoteAudio" autoplay></audio>
         </div>
-        <audio id="remoteAudio" autoplay></audio>
-      </div>
+      </section>
     </main>
+
+    <footer class="app-footer">
+      <p>© 2023 Voice Roulette | Анонимные голосовые чаты</p>
+    </footer>
   </div>
 
   <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>

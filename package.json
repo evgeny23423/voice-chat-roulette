@@ -1,7 +1,7 @@
 {
   "name": "voice-chat-roulette",
   "version": "1.0.0",
-  "description": "Голосовая чат-рулетка с PeerJS",
+  "description": "Voice chat roulette with PeerJS",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -9,9 +9,12 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "peer": "^0.6.1"
+    "peer": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3"
   },
   "engines": {
-    "node": ">=18.x"
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }
