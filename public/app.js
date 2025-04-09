@@ -110,7 +110,7 @@ async function findRandomPartner() {
   elements.findRandomBtn.disabled = true;
 
   try {
-    const response = await fetch(`https://${config.peerServer.host}/find-partner?myId=${state.myId}`);
+    const response = await fetch(`https://web-production-175e.up.railway.app/find-partner?myId=${state.myId}`);
     const data = await response.json();
     
     if (data.error) {
