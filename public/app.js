@@ -98,7 +98,6 @@ async function requestMicrophone() {
     return false;
   }
 }
-
 async function findRandomPartner(retryCount = 0) {
   if (!state.peer?.id) {
     alert('Сначала установите подключение к серверу');
@@ -110,14 +109,12 @@ async function findRandomPartner(retryCount = 0) {
   elements.findRandomBtn.textContent = 'Поиск...';
 
   try {
-    // Явно указываем полный URL вашего сервера
     const response = await fetch(`https://web-production-175e.up.railway.app/find-partner?myId=${state.myId}`, {
       headers: {
         'Content-Type': 'application/json'
       }
     });
 
-    // Обработка HTTP ошибок
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       const errorMessage = errorData?.error || `Ошибка сервера: ${response.status}`;
@@ -126,9 +123,7 @@ async function findRandomPartner(retryCount = 0) {
 
     const data = await response.json();
     
-    // Если сервер вернул ошибку
     if (data.error) {
-      // Автоматический повтор (максимум 3 попытки)
       if (retryCount < 3) {
         await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
         return findRandomPartner(retryCount + 1);
@@ -136,7 +131,6 @@ async function findRandomPartner(retryCount = 0) {
       throw new Error(data.error);
     }
 
-    // Если найден партнер
     if (data.partnerId) {
       await callPeer(data.partnerId);
       return;
@@ -154,26 +148,6 @@ async function findRandomPartner(retryCount = 0) {
   }
 }
 
-
-  try {
-    const response = await fetch(`https://web-production-175e.up.railway.app/find-partner?myId=${state.myId}`);
-    const data = await response.json();
-    
-    if (data.error) {
-      throw new Error(data.error);
-    }
-
-    if (data.partnerId) {
-      await callPeer(data.partnerId);
-    }
-  } catch (err) {
-    console.error('Find partner error:', err);
-    alert('Не удалось найти собеседника. Попробуйте позже.');
-  } finally {
-    elements.searchSpinner.classList.add('hidden');
-    elements.findRandomBtn.disabled = false;
-  }
-}
 
 // Звонок указанному собеседнику
 async function callPeer(peerId) {
