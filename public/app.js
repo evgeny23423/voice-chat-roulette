@@ -99,15 +99,61 @@ async function requestMicrophone() {
   }
 }
 
-// Поиск случайного собеседника
-async function findRandomPartner() {
-  if (!state.peer || !state.peer.id) {
-    alert('Соединение не установлено. Пожалуйста, подождите...');
+async function findRandomPartner(retryCount = 0) {
+  if (!state.peer?.id) {
+    alert('Сначала установите подключение к серверу');
     return;
   }
 
   elements.searchSpinner.classList.remove('hidden');
   elements.findRandomBtn.disabled = true;
+  elements.findRandomBtn.textContent = 'Поиск...';
+
+  try {
+    // Явно указываем полный URL вашего сервера
+    const response = await fetch(`https://web-production-175e.up.railway.app/find-partner?myId=${state.myId}`, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    // Обработка HTTP ошибок
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = errorData?.error || `Ошибка сервера: ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    
+    // Если сервер вернул ошибку
+    if (data.error) {
+      // Автоматический повтор (максимум 3 попытки)
+      if (retryCount < 3) {
+        await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
+        return findRandomPartner(retryCount + 1);
+      }
+      throw new Error(data.error);
+    }
+
+    // Если найден партнер
+    if (data.partnerId) {
+      await callPeer(data.partnerId);
+      return;
+    }
+
+    throw new Error('Собеседник не найден');
+
+  } catch (err) {
+    console.error('Ошибка поиска:', err);
+    elements.findRandomBtn.textContent = 'Попробовать снова';
+    alert(err.message);
+  } finally {
+    elements.searchSpinner.classList.add('hidden');
+    elements.findRandomBtn.disabled = false;
+  }
+}
+
 
   try {
     const response = await fetch(`https://web-production-175e.up.railway.app/find-partner?myId=${state.myId}`);

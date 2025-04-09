@@ -55,27 +55,43 @@ peerServer.on('connection', (client) => {
 // API endpoints
 app.get('/find-partner', (req, res) => {
   try {
-    const peers = Array.from(connectedPeers);
     const requestId = req.query.myId;
     
     if (!requestId) {
-      return res.status(400).json({ error: 'Missing myId parameter' });
-    }
-
-    const availablePeers = peers.filter(id => id !== requestId);
-    
-    if (availablePeers.length === 0) {
-      return res.status(404).json({ 
-        error: 'No available partners',
-        availablePeers: peers.length
+      return res.status(400).json({ 
+        error: 'Требуется параметр myId',
+        code: 'MISSING_ID'
       });
     }
 
-    const partnerId = availablePeers[Math.floor(Math.random() * availablePeers.length)];
-    res.json({ partnerId });
+    // Фильтруем активных пользователей
+    const availablePeers = Array.from(connectedPeers)
+      .filter(id => id !== requestId && id !== undefined);
+
+    if (availablePeers.length === 0) {
+      return res.status(200).json({  // 200 вместо 404 для корректной обработки на клиенте
+        error: 'Нет доступных собеседников',
+        code: 'NO_PARTNERS',
+        retryAfter: 5
+      });
+    }
+
+  const partnerId = availablePeers[Math.floor(Math.random() * availablePeers.length)];
+    
+    // Удаляем из списка доступных
+    connectedPeers.delete(partnerId);
+    
+    res.json({ 
+      partnerId,
+      timestamp: Date.now() 
+    });
+
   } catch (err) {
-    console.error('Find partner error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Ошибка поиска партнера:', err);
+    res.status(500).json({ 
+      error: 'Внутренняя ошибка сервера',
+      code: 'SERVER_ERROR'
+    });
   }
 });
 
