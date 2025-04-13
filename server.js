@@ -2,7 +2,7 @@ const express = require('express');
 const { PeerServer } = require('peer');
 const cors = require('cors');
 const path = require('path');
-const activePeers = new Map();
+
 const app = express();
 const PORT = process.env.PORT || 9000;
 const PEER_PORT = process.env.PEER_PORT || 9001;
@@ -19,71 +19,107 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Peer Server
 const peerServer = PeerServer({
-  port: process.env.PEER_PORT || 9001,
+  port: PEER_PORT,
   path: '/peerjs',
-  proxied: true,  // Критически важно для Railway
-  ssl: {},        // Активирует HTTPS
+  proxied: true,
+  ssl: {},
   allow_discovery: true,
-  key: 'peerjs',  // Фиксированный ключ безопасности
+  key: 'peerjs',
   concurrent_limit: 1000,
-  alive_timeout: 60000  // Таймаут соединения
+  alive_timeout: 60000
 });
 
-const connectedPeers = new Set();
+// Хранилище активных пиров с таймстемпами
+const activePeers = new Map();
 
+// Обработчики событий PeerServer
 peerServer.on('connection', (client) => {
-  try {
-    const clientId = client.id;
-    connectedPeers.add(clientId);
-    console.log('Peer connected:', clientId);
+  const clientId = client.id;
+  activePeers.set(clientId, Date.now());
+  console.log('Peer connected:', clientId);
 
-    client.on('close', () => {
-      connectedPeers.delete(clientId);
-      console.log('Peer disconnected:', clientId);
-    });
+  client.on('close', () => {
+    activePeers.delete(clientId);
+    console.log('Peer disconnected:', clientId);
+  });
 
-    client.on('error', (err) => {
-      console.error('Client error:', err);
-      connectedPeers.delete(clientId);
-    });
-  } catch (err) {
-    console.error('Connection handler error:', err);
-  }
+  client.on('error', (err) => {
+    console.error('Peer error:', err);
+    activePeers.delete(clientId);
+  });
 });
 
-// API endpoints
+// Очистка неактивных пиров каждые 5 минут
+setInterval(() => {
+  const now = Date.now();
+  const timeout = 5 * 60 * 1000; // 5 минут
+  
+  activePeers.forEach((lastActive, peerId) => {
+    if (now - lastActive > timeout) {
+      activePeers.delete(peerId);
+      console.log(`Removed inactive peer: ${peerId}`);
+    }
+  });
+}, 5 * 60 * 1000);
+
+// API Endpoints
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    activePeers: activePeers.size,
+    uptime: process.uptime()
+  });
+});
+
+app.get('/ping', (req, res) => {
+  const peerId = req.query.peerId;
+  if (peerId && activePeers.has(peerId)) {
+    activePeers.set(peerId, Date.now());
+  }
+  res.sendStatus(200);
+});
+
 app.get('/find-partner', (req, res) => {
   try {
-    const requestId = req.query.myId;
+    const myId = req.query.myId;
     
-    if (!requestId) {
+    if (!myId) {
       return res.status(400).json({ 
         error: 'Требуется параметр myId',
         code: 'MISSING_ID'
       });
     }
 
-    // Фильтруем активных пользователей
-    const availablePeers = Array.from(connectedPeers)
-      .filter(id => id !== requestId && id !== undefined);
+    // Обновляем активность текущего пира
+    activePeers.set(myId, Date.now());
+
+    // Ищем доступных партнеров (исключая себя и неактивных)
+    const availablePeers = [];
+    const now = Date.now();
+    const maxInactiveTime = 30000; // 30 секунд
+
+    activePeers.forEach((lastActive, peerId) => {
+      if (peerId !== myId && (now - lastActive) < maxInactiveTime) {
+        availablePeers.push(peerId);
+      }
+    });
 
     if (availablePeers.length === 0) {
-      return res.status(200).json({  // 200 вместо 404 для корректной обработки на клиенте
+      return res.status(200).json({
         error: 'Нет доступных собеседников',
         code: 'NO_PARTNERS',
         retryAfter: 5
       });
     }
 
-  const partnerId = availablePeers[Math.floor(Math.random() * availablePeers.length)];
-    
-    // Удаляем из списка доступных
-    connectedPeers.delete(partnerId);
+    // Выбираем случайного партнера
+    const partnerId = availablePeers[Math.floor(Math.random() * availablePeers.length)];
     
     res.json({ 
       partnerId,
-      timestamp: Date.now() 
+      timestamp: Date.now()
     });
 
   } catch (err) {
@@ -94,15 +130,6 @@ app.get('/find-partner', (req, res) => {
     });
   }
 });
-
-app.get('/peerjs/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    peers: connectedPeers.size,
-    uptime: process.uptime()
-  });
-});
-
 
 // Frontend
 app.get('*', (req, res) => {
@@ -115,8 +142,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start servers
-const webServer = app.listen(PORT, '0.0.0.0', () => {
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`
   Server is running:
   - Web: http://localhost:${PORT}
@@ -124,75 +151,9 @@ const webServer = app.listen(PORT, '0.0.0.0', () => {
   - Health: https://web-production-175e.up.railway.app/health
   `);
 });
-setInterval(() => {
-  const now = Date.now();
-  for (const [peerId, lastActive] of activePeers) {
-    if (now - lastActive > 300000) {
-      activePeers.delete(peerId);
-      console.log(`Удалён неактивный пользователь: ${peerId}`);
-    }
-  }
-}, 300000);
-// Добавьте этот endpoint (можно вместе с другими маршрутами)
-app.get('/find-partner', (req, res) => {
-  const myId = req.query.myId;
-  
-  if (!myId) {
-    return res.status(400).json({ error: 'Не указан ID пользователя' });
-  }
-
-  activePeers.set(myId, Date.now());
-
-  for (const [peerId, lastActive] of activePeers) {
-    if (peerId !== myId && Date.now() - lastActive < 30000) {
-      activePeers.delete(peerId);
-      activePeers.delete(myId);
-      return res.json({ partnerId: peerId });
-    }
-  }
-
-  res.status(404).json({ 
-    error: 'Нет доступных собеседников',
-    retryAfter: 5
-  });
-});
-
-// Добавьте endpoint для "пульса"
-app.get('/ping', (req, res) => {
-  const peerId = req.query.peerId;
-  if (peerId && activePeers.has(peerId)) {
-    activePeers.set(peerId, Date.now());
-  }
-  res.sendStatus(200);
-});
-
-
-// В app.js
-function setupSocketReconnect() {
-  const socket = state.peer.socket;
-  
-  socket.on('close', () => {
-    if (!state.peer.disconnected) {
-      console.log('WebSocket closed, reconnecting...');
-      setTimeout(initPeerConnection, 1000);
-    }
-  });
-};
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received. Shutting down gracefully...');
-  webServer.close(() => {
-    console.log('HTTP server closed');
-    process.exit(0);
-  });
-});
-
-process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Rejection:', err);
-});
-
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-  process.exit(1);
+  process.exit(0);
 });
