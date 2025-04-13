@@ -2,7 +2,7 @@ const express = require('express');
 const { PeerServer } = require('peer');
 const cors = require('cors');
 const path = require('path');
-
+const activePeers = new Map();
 const app = express();
 const PORT = process.env.PORT || 9000;
 const PEER_PORT = process.env.PEER_PORT || 9001;
@@ -124,6 +124,49 @@ const webServer = app.listen(PORT, '0.0.0.0', () => {
   - Health: https://web-production-175e.up.railway.app/health
   `);
 });
+setInterval(() => {
+  const now = Date.now();
+  for (const [peerId, lastActive] of activePeers) {
+    if (now - lastActive > 300000) {
+      activePeers.delete(peerId);
+      console.log(`Удалён неактивный пользователь: ${peerId}`);
+    }
+  }
+}, 300000);
+// Добавьте этот endpoint (можно вместе с другими маршрутами)
+app.get('/find-partner', (req, res) => {
+  const myId = req.query.myId;
+  
+  if (!myId) {
+    return res.status(400).json({ error: 'Не указан ID пользователя' });
+  }
+
+  activePeers.set(myId, Date.now());
+
+  for (const [peerId, lastActive] of activePeers) {
+    if (peerId !== myId && Date.now() - lastActive < 30000) {
+      activePeers.delete(peerId);
+      activePeers.delete(myId);
+      return res.json({ partnerId: peerId });
+    }
+  }
+
+  res.status(404).json({ 
+    error: 'Нет доступных собеседников',
+    retryAfter: 5
+  });
+});
+
+// Добавьте endpoint для "пульса"
+app.get('/ping', (req, res) => {
+  const peerId = req.query.peerId;
+  if (peerId && activePeers.has(peerId)) {
+    activePeers.set(peerId, Date.now());
+  }
+  res.sendStatus(200);
+});
+
+
 // В app.js
 function setupSocketReconnect() {
   const socket = state.peer.socket;
