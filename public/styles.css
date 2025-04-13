@@ -1,142 +1,4 @@
 :root {
-<<<<<<< HEAD
-  --primary-color: #4285f4;
-  --secondary-color: #f1f3f4;
-  --danger-color: #ea4335;
-  --success-color: #34a853;
-  --warning-color: #fbbc05;
-  --text-color: #202124;
-  --text-secondary: #5f6368;
-  --bg-color: #ffffff;
-  --panel-bg: #f8f9fa;
-  --border-color: #dadce0;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  line-height: 1.6;
-  color: var(--text-color);
-  background-color: var(--bg-color);
-  padding: 20px;
-  min-height: 100vh;
-}
-
-.container {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-header {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-h1 {
-  color: var(--primary-color);
-}
-
-.panel {
-  background: var(--panel-bg);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.panel h2 {
-  font-size: 1.2rem;
-  margin-bottom: 15px;
-  color: var(--text-secondary);
-}
-
-.id-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 15px;
-  font-size: 1.1rem;
-}
-
-#myId {
-  font-family: monospace;
-  font-weight: bold;
-}
-
-.icon-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.icon-btn:hover {
-  background-color: rgba(0,0,0,0.1);
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 16px;
-  font-size: 0.85rem;
-}
-
-.status-badge.connected {
-  background-color: rgba(52, 168, 83, 0.1);
-  color: var(--success-color);
-}
-
-.status-badge.disconnected {
-  background-color: rgba(234, 67, 53, 0.1);
-  color: var(--danger-color);
-}
-
-.status-icon {
-  font-size: 1.2rem;
-}
-
-.input-group {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-input {
-  padding: 10px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  flex-grow: 1;
-}
-
-.btn {
-  cursor: pointer;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn.primary {
-=======
   --primary-color: #6366f1;
   --primary-dark: #4f46e5;
   --danger-color: #ef4444;
@@ -180,6 +42,7 @@ body {
   flex-direction: column;
 }
 
+/* Header Styles */
 .app-header {
   text-align: center;
   margin-bottom: 2rem;
@@ -208,29 +71,14 @@ body {
   font-size: 0.875rem;
 }
 
-.app-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.app-footer {
-  text-align: center;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border-color);
-  color: var(--text-light);
-  font-size: 0.75rem;
-}
-
-/* Карточки */
+/* Card Styles */
 .card {
   background-color: var(--card-bg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
   transition: var(--transition);
+  margin-bottom: 1.5rem;
 }
 
 .card:hover {
@@ -250,11 +98,11 @@ body {
   font-weight: 600;
 }
 
+/* Profile Section */
 .profile-content, .controls-content, .call-content {
   padding: 1.5rem;
 }
 
-/* Профиль пользователя */
 .id-display {
   display: flex;
   flex-direction: column;
@@ -281,7 +129,7 @@ body {
   flex: 1;
 }
 
-/* Кнопки */
+/* Button Styles */
 .button {
   display: inline-flex;
   align-items: center;
@@ -298,19 +146,10 @@ body {
 }
 
 .primary-button {
->>>>>>> ee5044a24df45e10ca3cd4547755ba5fdb3c99f3
   background-color: var(--primary-color);
   color: white;
 }
 
-<<<<<<< HEAD
-.btn.secondary {
-  background-color: var(--secondary-color);
-  color: var(--text-color);
-}
-
-.btn.danger {
-=======
 .primary-button:hover {
   background-color: var(--primary-dark);
   transform: translateY(-1px);
@@ -328,116 +167,15 @@ body {
 }
 
 .danger-button {
->>>>>>> ee5044a24df45e10ca3cd4547755ba5fdb3c99f3
   background-color: var(--danger-color);
   color: white;
 }
 
-<<<<<<< HEAD
-.btn:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.spinner-container {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 15px;
-  color: var(--text-secondary);
-}
-
-.spinner {
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(0,0,0,0.1);
-  border-radius: 50%;
-  border-top-color: var(--primary-color);
-  animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.call-info {
-  margin-bottom: 15px;
-  font-size: 1.1rem;
-=======
 .danger-button:hover {
   background-color: var(--danger-dark);
 }
 
-.large-button {
-  width: 100%;
-  padding: 1rem;
-  font-size: 1rem;
-}
-
-.icon-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-light);
-  transition: var(--transition);
-  padding: 0.5rem;
-  border-radius: 50%;
-}
-
-.icon-button:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  color: var(--text-color);
-}
-
-.icon-button.large {
-  padding: 0.75rem;
-  background-color: var(--bg-color);
-}
-
-.button-icon {
-  font-size: 1.25rem;
-}
-
-.button-text {
-  margin-left: 0.5rem;
-}
-
-/* Статус */
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.8125rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  background-color: var(--bg-color);
-}
-
-.status-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background-color: var(--text-light);
-}
-
-.status-badge.connected .status-dot {
-  background-color: var(--success-color);
-}
-
-.status-badge.disconnected .status-dot {
-  background-color: var(--warning-color);
-}
-
-/* Формы */
+/* Form Elements */
 .text-input {
   width: 100%;
   padding: 0.75rem 1rem;
@@ -459,34 +197,7 @@ body {
   margin-bottom: 1rem;
 }
 
-.input-with-button .text-input {
-  flex: 1;
-}
-
-/* Разделитель */
-.divider {
-  display: flex;
-  align-items: center;
-  margin: 1.25rem 0;
-  color: var(--text-light);
-  font-size: 0.8125rem;
-}
-
-.divider::before, .divider::after {
-  content: "";
-  flex: 1;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.divider::before {
-  margin-right: 1rem;
-}
-
-.divider::after {
-  margin-left: 1rem;
-}
-
-/* Активный звонок */
+/* Call Panel */
 .call-info {
   display: flex;
   justify-content: space-between;
@@ -513,73 +224,25 @@ body {
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--text-color);
->>>>>>> ee5044a24df45e10ca3cd4547755ba5fdb3c99f3
 }
 
 .call-actions {
   display: flex;
-<<<<<<< HEAD
-  gap: 10px;
+  gap: 0.75rem;
 }
 
+/* Utility Classes */
 .hidden {
-  display: none !important;
+  display: none;
 }
 
-@media (max-width: 480px) {
-  body {
-    padding: 10px;
-  }
-  
-  .panel {
-    padding: 15px;
-  }
-  
-  .input-group {
-    flex-direction: column;
-  }
-  
-  .btn, input {
-    width: 100%;
-=======
-  gap: 0.75rem;
-}
-
-.call-actions .icon-button {
-  flex: 1;
-}
-
-/* Спиннер */
-.search-loader {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  color: var(--text-light);
-  font-size: 0.875rem;
-}
-
-.spinner {
-  width: 1.25rem;
-  height: 1.25rem;
-  border: 2px solid rgba(0, 0, 0, 0.1);
-  border-radius: 50%;
-  border-top-color: var(--primary-color);
-  animation: spin 1s linear infinite;
-}
-
+/* Animations */
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
 
-.hidden {
-  display: none;
-}
-
-/* Анимации */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -591,11 +254,7 @@ body {
   }
 }
 
-.card {
-  animation: fadeIn 0.3s ease-out forwards;
-}
-
-/* Адаптивность */
+/* Responsive Adjustments */
 @media (max-width: 480px) {
   .app-container {
     padding: 1rem;
@@ -607,10 +266,5 @@ body {
   
   .call-actions {
     flex-direction: column;
-  }
-  
-  .button-icon {
-    font-size: 1.1rem;
->>>>>>> ee5044a24df45e10ca3cd4547755ba5fdb3c99f3
   }
 }
