@@ -56,10 +56,11 @@ function initPeerConnection() {
   });
   
  state.keepAliveInterval = setInterval(() => {
-    fetch(`https://web-production-175e.up.railway.app/ping?peerId=${id}`)
+  if (state.myId) {
+    fetch(`https://web-production-175e.up.railway.app/ping?peerId=${state.myId}`)
       .catch(console.error);
-  }, 20000);
-});
+  }
+}, 20000);
 
 
   state.peer.on('error', (err) => {
