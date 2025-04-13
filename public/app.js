@@ -56,7 +56,7 @@ function initPeerConnection() {
   });
   
  state.keepAliveInterval = setInterval(() => {
-    fetch(`https://web-production-175e.up.railway.app/ping?peerId=${id}`)
+    fetch(`https://web-production-175e.up.railway.app/ping?peerId=${id}`
       .catch(console.error);
   }, 20000);
 });
@@ -106,48 +106,6 @@ async function requestMicrophone() {
   }
 }
 async function findRandomPartner(retryCount = 0) {
-  if (!state.peer?.id) {
-    alert('Сначала подключитесь к серверу');
-    return;
-  }
-
-  elements.searchSpinner.classList.remove('hidden');
-  elements.findRandomBtn.disabled = true;
-  elements.findRandomBtn.textContent = 'Поиск...';
-
-  try {
-    const response = await fetch(`https://web-production-175e.up.railway.app/find-partner?myId=${state.myId}`);
-    
-    if (!response.ok) {
-      throw new Error('Сервер недоступен');
-    }
-
-    const data = await response.json();
-    
-    if (data.error) {
-      if (retryCount < 3) {
-        await new Promise(resolve => setTimeout(resolve, data.retryAfter * 1000 || 2000));
-        return findRandomPartner(retryCount + 1);
-      }
-      throw new Error(data.error);
-    }
-
-    if (data.partnerId) {
-      await callPeer(data.partnerId);
-      return;
-    }
-
-    throw new Error('Сервер не вернул ID собеседника');
-
-  } catch (err) {
-    console.error('Ошибка:', err);
-    elements.findRandomBtn.textContent = 'Попробовать снова';
-    alert(err.message);
-  } finally {
-    elements.searchSpinner.classList.add('hidden');
-    elements.findRandomBtn.disabled = false;
-  }
-}
   if (!state.peer?.id) {
     alert('Сначала установите подключение к серверу');
     return;
