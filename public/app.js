@@ -22,7 +22,7 @@ const state = {
   myId: null,
   retryCount: 0,
   onlineCount: 0,
-  onlineCheckInterval: null
+  onlineCheckInterval: null,
   keepAliveInterval: null
 };
 
