@@ -2,6 +2,7 @@ const express = require('express');
 const { PeerServer } = require('peer');
 const cors = require('cors');
 const path = require('path');
+const WebSocket = require('ws');
 
 const app = express();
 const PORT = process.env.PORT || 9000;
@@ -43,6 +44,10 @@ peerServer.on('connection', (client) => {
   client.on('close', () => {
     activePeers.delete(clientId);
     console.log('Peer disconnected:', clientId);
+  });
+   client.on('close', () => {
+    activePeers.delete(clientId);
+    broadcastOnlineCount();
   });
 
   client.on('error', (err) => {
@@ -134,6 +139,12 @@ app.get('/find-partner', (req, res) => {
 // Frontend
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+app.get('/online-count', (req, res) => {
+  res.json({ 
+    count: activePeers.size,
+    lastUpdated: new Date().toISOString()
+  });
 });
 
 // Error handling

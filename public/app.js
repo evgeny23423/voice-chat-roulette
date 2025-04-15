@@ -21,6 +21,8 @@ const state = {
   callTimer: null,
   myId: null,
   retryCount: 0
+  onlineCount: 0,
+  onlineCheckInterval: null
 };
 
 // DOM элементы
@@ -40,6 +42,7 @@ const elements = {
   remoteAudio: document.getElementById('remoteAudio'),
   searchSpinner: document.getElementById('searchSpinner'),
   copyIdBtn: document.getElementById('copyIdBtn')
+  onlineCounter: document.getElementById('onlineCounter'),
 };
 function initPeerConnection() {
   state.peer = new Peer({
@@ -53,6 +56,8 @@ function initPeerConnection() {
     elements.myId.textContent = id;
     updateStatus('connected');
     console.log('My peer ID is: ' + id);
+	updateOnlineCount();
+    state.onlineCheckInterval = setInterval(updateOnlineCount, 30000);
   });
   
  state.keepAliveInterval = setInterval(() => {
@@ -176,7 +181,16 @@ async function callPeer(peerId) {
     alert('Ошибка при установке соединения');
   }
 }
-
+async function updateOnlineCount() {
+  try {
+    const response = await fetch('https://web-production-175e.up.railway.app/online-count');
+    const data = await response.json();
+    state.onlineCount = data.count;
+    elements.onlineCounter.textContent = `Онлайн: ${data.count}`;
+  } catch (err) {
+    console.error('Ошибка получения счетчика:', err);
+  }
+} 
 // Настройка обработчиков звонка
 function setupCall(call) {
   state.currentCall = call;
@@ -208,6 +222,9 @@ function endCall() {
   if (state.callTimer) {
     clearInterval(state.callTimer);
   }
+   if (state.onlineCheckInterval) {
+    clearInterval(state.onlineCheckInterval);
+  }
   
   if (elements.remoteAudio.srcObject) {
     elements.remoteAudio.srcObject = null;
@@ -221,7 +238,8 @@ function endCall() {
   state.isConnected = false;
   elements.activeCallPanel.classList.add('hidden');
   updateStatus('connected');
-}
+}  
+
 
 // Таймер звонка
 function startCallTimer() {
