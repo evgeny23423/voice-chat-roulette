@@ -141,10 +141,15 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 app.get('/online-count', (req, res) => {
-  res.json({ 
-    count: activePeers.size,
-    lastUpdated: new Date().toISOString()
-  });
+  try {
+    res.json({ 
+      count: activePeers.size,
+      timestamp: Date.now()
+    });
+  } catch (err) {
+    console.error('Ошибка в /online-count:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Error handling
