@@ -20,8 +20,10 @@ const state = {
   callStartTime: null,
   callTimer: null,
   myId: null,
+  retryCount: 0,
   onlineCount: 0,
   onlineCheckInterval: null
+  keepAliveInterval: null
 };
 
 // DOM элементы
@@ -40,8 +42,8 @@ const elements = {
   hangupBtn: document.getElementById('hangupBtn'),
   remoteAudio: document.getElementById('remoteAudio'),
   searchSpinner: document.getElementById('searchSpinner'),
-  copyIdBtn: document.getElementById('copyIdBtn')
-  onlineCounter: document.getElementById('onlineCounter'),
+  copyIdBtn: document.getElementById('copyIdBtn'),
+  onlineCounter: document.getElementById('onlineCounter')
 };
 function initPeerConnection() {
   state.peer = new Peer({
