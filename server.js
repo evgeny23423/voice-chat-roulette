@@ -137,20 +137,22 @@ app.get('/find-partner', (req, res) => {
 });
 
 // Frontend
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
 app.get('/online-count', (req, res) => {
   try {
-    res.json({ 
+    res.json({
+      success: true,
       count: activePeers.size,
       timestamp: Date.now()
     });
   } catch (err) {
-    console.error('Ошибка в /online-count:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Online count error:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 
 // Error handling
 app.use((err, req, res, next) => {
