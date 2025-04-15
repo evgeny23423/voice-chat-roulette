@@ -25,7 +25,7 @@ const peerServer = PeerServer({
   port: PEER_PORT,
   path: '/peerjs',
   proxied: true,
-  ssl: {},
+  ssl: { cert: fs.readFileSync('/path/to/cert.pem')},
   allow_discovery: true,
   key: 'peerjs',
   concurrent_limit: 1000,
