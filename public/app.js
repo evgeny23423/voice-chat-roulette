@@ -20,7 +20,6 @@ const state = {
   callStartTime: null,
   callTimer: null,
   myId: null,
-  retryCount: 0
   onlineCount: 0,
   onlineCheckInterval: null
 };
