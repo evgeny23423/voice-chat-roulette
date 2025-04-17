@@ -20,6 +20,92 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Хранилища данных
+const activePeers = new Map(); // Для PeerJS соединений
+const chatMessages = []; // Для сообщений чата
+const activeChatUsers = new Set(); // Для WebSocket соединений чата
+
+// Инициализация HTTP сервера
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`
+  Server is running:
+  - Web: http://localhost:${PORT}
+  - PeerJS: wss://web-production-175e.up.railway.app/peerjs
+  - Health: https://web-production-175e.up.railway.app/health
+  `);
+});
+
+// Инициализация WebSocket сервера
+const wss = new WebSocket.Server({ server });
+
+// Обработчики WebSocket
+wss.on('connection', (ws) => {
+  activeChatUsers.add(ws);
+  broadcastOnlineCount();
+  
+  // Отправляем историю сообщений новому клиенту
+  ws.send(JSON.stringify({ 
+    type: 'history', 
+    messages: chatMessages.slice(-50) 
+  }));
+
+  ws.on('message', (message) => {
+    try {
+      const msg = JSON.parse(message);
+      
+      if (msg.type === 'message') {
+        // Добавляем метку времени и сохраняем сообщение
+        const chatMessage = {
+          ...msg,
+          timestamp: Date.now()
+        };
+        
+        chatMessages.push(chatMessage);
+        
+        // Рассылаем сообщение всем подключенным клиентам
+        broadcastMessage(chatMessage);
+      }
+    } catch (err) {
+      console.error('Chat message error:', err);
+    }
+  });
+
+  ws.on('close', () => {
+    activeChatUsers.delete(ws);
+    broadcastOnlineCount();
+  });
+
+  ws.on('error', (err) => {
+    console.error('WebSocket error:', err);
+    activeChatUsers.delete(ws);
+    broadcastOnlineCount();
+  });
+});
+
+// Функции для работы с WebSocket
+function broadcastMessage(message) {
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: 'message',
+        ...message
+      }));
+    }
+  });
+}
+
+function broadcastOnlineCount() {
+  const count = activeChatUsers.size;
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: 'online_count',
+        count
+      }));
+    }
+  });
+}
+
 // Peer Server
 const peerServer = PeerServer({
   port: PEER_PORT,
@@ -32,9 +118,6 @@ const peerServer = PeerServer({
   alive_timeout: 60000
 });
 
-// Хранилище активных пиров с таймстемпами
-const activePeers = new Map();
-
 // Обработчики событий PeerServer
 peerServer.on('connection', (client) => {
   const clientId = client.id;
@@ -45,10 +128,6 @@ peerServer.on('connection', (client) => {
     activePeers.delete(clientId);
     console.log('Peer disconnected:', clientId);
   });
-   client.on('close', () => {
-    activePeers.delete(clientId);
-    broadcastOnlineCount();
-  });
 
   client.on('error', (err) => {
     console.error('Peer error:', err);
@@ -56,7 +135,7 @@ peerServer.on('connection', (client) => {
   });
 });
 
-// Очистка неактивных пиров каждые 5 минут
+// Очистка неактивных пиров
 setInterval(() => {
   const now = Date.now();
   const timeout = 5 * 60 * 1000; // 5 минут
@@ -74,6 +153,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
     activePeers: activePeers.size,
+    activeChatUsers: activeChatUsers.size,
     uptime: process.uptime()
   });
 });
@@ -84,6 +164,14 @@ app.get('/ping', (req, res) => {
     activePeers.set(peerId, Date.now());
   }
   res.sendStatus(200);
+});
+
+app.get('/online-count', (req, res) => {
+  res.json({
+    success: true,
+    count: activePeers.size,
+    timestamp: Date.now()
+  });
 });
 
 app.get('/find-partner', (req, res) => {
@@ -100,7 +188,7 @@ app.get('/find-partner', (req, res) => {
     // Обновляем активность текущего пира
     activePeers.set(myId, Date.now());
 
-    // Ищем доступных партнеров (исключая себя и неактивных)
+    // Ищем доступных партнеров
     const availablePeers = [];
     const now = Date.now();
     const maxInactiveTime = 30000; // 30 секунд
@@ -137,22 +225,9 @@ app.get('/find-partner', (req, res) => {
 });
 
 // Frontend
-app.get('/online-count', (req, res) => {
-  try {
-    res.json({
-      success: true,
-      count: activePeers.size,
-      timestamp: Date.now()
-    });
-  } catch (err) {
-    console.error('Online count error:', err);
-    res.status(500).json({ success: false, error: 'Internal server error' });
-  }
-});
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
 
 // Error handling
 app.use((err, req, res, next) => {
@@ -160,18 +235,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`
-  Server is running:
-  - Web: http://localhost:${PORT}
-  - PeerJS: wss://web-production-175e.up.railway.app/peerjs
-  - Health: https://web-production-175e.up.railway.app/health
-  `);
-});
-
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received. Shutting down gracefully...');
-  process.exit(0);
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
 });
