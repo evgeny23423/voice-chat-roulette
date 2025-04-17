@@ -177,8 +177,7 @@ function updateOnlineCount(count) {
     elements.messagesContainer.appendChild(messageEl);
 	elements.messagesContainer.scrollTop = elements.messagesContainer.scrollHeight;
   });
-  
-} 
+   
 
 function initPeerConnection() {
   state.peer = new Peer({
