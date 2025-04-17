@@ -58,7 +58,7 @@ function initPeerConnection() {
     updateStatus('connected');
     console.log('My peer ID is: ' + id);
 	updateOnlineCount();
-    state.onlineCheckInterval = setInterval(updateOnlineCount, 30000);
+    state.onlineCheckInterval = setInterval(updateOnlineCount, 10000);
   });
   
  state.keepAliveInterval = setInterval(() => {
@@ -76,7 +76,7 @@ function initPeerConnection() {
     // Автоматический реконнект
     if (state.retryCount < 3) {
       state.retryCount++;
-      setTimeout(initPeerConnection, 2000 * state.retryCount);
+      setTimeout(initPeerConnection, 1000 * state.retryCount);
     }
   });
 
@@ -139,7 +139,7 @@ async function findRandomPartner(retryCount = 0) {
     
     if (data.error) {
       if (retryCount < 3) {
-        await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
         return findRandomPartner(retryCount + 1);
       }
       throw new Error(data.error);
