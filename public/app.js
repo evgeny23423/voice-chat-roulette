@@ -8,7 +8,11 @@ const config = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:global.stun.twilio.com:3478' }
-  ]
+  ],
+   chatServer: {
+    url: 'https://web-production-175e.up.railway.app/chat',
+    reconnectDelay: 5000
+  }
 };
 // Состояние приложения
 const state = {
@@ -23,7 +27,10 @@ const state = {
   retryCount: 0,
   onlineCount: 0,
   onlineCheckInterval: null,
-  keepAliveInterval: null
+  keepAliveInterval: null,
+  chatSocket: null,
+  chatMessages: [],
+  isChatConnected: false
 };
 
 // DOM элементы
@@ -43,23 +50,161 @@ const elements = {
   remoteAudio: document.getElementById('remoteAudio'),
   searchSpinner: document.getElementById('searchSpinner'),
   copyIdBtn: document.getElementById('copyIdBtn'),
-  onlineCounter: document.getElementById('onlineCounter')
+  onlineCounter: document.getElementById('onlineCounter'),
+  chatContainer: document.getElementById('chatContainer'),
+  messagesContainer: document.getElementById('messagesContainer'),
+  messageInput: document.getElementById('messageInput'),
+  sendMessageBtn: document.getElementById('sendMessageBtn'),
+  toggleChatBtn: document.getElementById('toggleChatBtn'),
+  
 };
+function initChat() {
+  if (state.chatSocket) {
+    state.chatSocket.close();
+  }
+
+  state.chatSocket = new WebSocket(`wss://${config.peerServer.host}/chat`);
+
+  state.chatSocket.onopen = () => {
+    state.isChatConnected = true;
+    console.log('Chat connected');
+  };
+
+  state.chatSocket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    
+    if (data.type === 'history') {
+      state.chatMessages = data.messages || [];
+      renderMessages();
+    } 
+    else if (data.type === 'chat_message') {
+      state.chatMessages.push(data);
+      renderMessages();
+    }
+    else if (data.type === 'online_count') {
+      updateOnlineCount(data.count);
+    }
+  };
+
+  state.chatSocket.onclose = () => {
+    state.isChatConnected = false;
+    console.log('Chat disconnected. Reconnecting...');
+    setTimeout(initChat, config.chatServer.reconnectDelay);
+  };
+
+  state.chatSocket.onerror = (err) => {
+    console.error('Chat error:', err);
+  };
+}
+
+function renderMessages() {
+  elements.messagesContainer.innerHTML = '';
+  const messagesToShow = state.chatMessages.slice(-50);
+  
+  messagesToShow.forEach(msg => {
+    const messageEl = document.createElement('div');
+    messageEl.className = 'message';
+    
+    const timeEl = document.createElement('span');
+    timeEl.className = 'message-time';
+    timeEl.textContent = new Date(msg.timestamp).toLocaleTimeString();
+    
+    const textEl = document.createElement('div');
+    textEl.className = 'message-text';
+    textEl.textContent = msg.text;
+    
+    messageEl.appendChild(timeEl);
+    messageEl.appendChild(textEl);
+    elements.messagesContainer.appendChild(messageEl);
+  });
+  
+  elements.messagesContainer.scrollTop = elements.messagesContainer.scrollHeight;
+}
+
+function sendMessage() {
+  const text = elements.messageInput.value.trim();
+  if (!text || !state.isChatConnected) return;
+
+  const message = {
+    type: 'chat_message',  // Используем единый тип сообщения
+    text: text,
+    timestamp: Date.now()
+  };
+
+  try {
+    state.chatSocket.send(JSON.stringify(message));
+    elements.messageInput.value = '';
+    elements.messageInput.focus();
+  } catch (err) {
+    console.error('Error sending message:', err);
+  }
+}
+
+function updateOnlineCount(count) {
+  if (count !== undefined) {
+    state.onlineCount = count;
+  }
+  if (elements.onlineCounter) {
+    elements.onlineCounter.textContent = `Онлайн: ${state.onlineCount}`;
+  }
+}
+
+
+function updateOnlineCount(count) {
+  if (count !== undefined) {
+    state.onlineCount = count;
+  }
+  if (elements.onlineCounter) {
+    elements.onlineCounter.textContent = `Онлайн: ${state.onlineCount}`;
+  }
+}
+  
+  
+  messagesToShow.forEach(msg => {
+    const messageEl = document.createElement('div');
+    messageEl.className = 'message';
+    
+    const timeEl = document.createElement('span');
+    timeEl.className = 'message-time';
+    timeEl.textContent = new Date(msg.timestamp).toLocaleTimeString();
+    
+    const textEl = document.createElement('div');
+    textEl.className = 'message-text';
+    textEl.textContent = msg.text;
+    
+    messageEl.appendChild(timeEl);
+    messageEl.appendChild(textEl);
+    elements.messagesContainer.appendChild(messageEl);
+	elements.messagesContainer.scrollTop = elements.messagesContainer.scrollHeight;
+  });
+  
+} 
+
 function initPeerConnection() {
   state.peer = new Peer({
     config: config.peerServer,
     iceServers: config.iceServers
   });
 
-
   state.peer.on('open', (id) => {
     state.myId = id;
     elements.myId.textContent = id;
     updateStatus('connected');
     console.log('My peer ID is: ' + id);
-	updateOnlineCount();
-    state.onlineCheckInterval = setInterval(updateOnlineCount, 30000);
+    
+    // Инициализируем чат и счетчик онлайн
+    initChat();
+    updateOnlineCount();
+    state.onlineCheckInterval = setInterval(() => {
+      fetch('https://web-production-175e.up.railway.app/online-count')
+        .then(response => response.json())
+        .then(data => updateOnlineCount(data.count))
+        .catch(console.error);
+    }, 30000);
   });
+
+
+
   
  state.keepAliveInterval = setInterval(() => {
   if (state.myId) {
@@ -67,6 +212,14 @@ function initPeerConnection() {
       .catch(console.error);
   }
 }, 20000);
+
+state.peer.on('open', (id) => {
+  state.myId = id;
+  elements.myId.textContent = id;
+  updateStatus('connected');
+  console.log('My peer ID is: ' + id);
+
+
 
 
   state.peer.on('error', (err) => {
@@ -282,8 +435,19 @@ function updateStatus(status) {
 document.addEventListener('DOMContentLoaded', async () => {
   // Инициализация PeerJS
   await initPeerConnection();
+          
+
   
   // Обработчики событий
+  elements.sendMessageBtn.addEventListener('click', sendMessage);
+   elements.messageInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+  
+  elements.toggleChatBtn.addEventListener('click', () => {
+    elements.chatContainer.classList.toggle('hidden');
+  });
+  
   elements.callBtn.addEventListener('click', () => {
     const partnerId = elements.partnerId.value.trim();
     if (partnerId) {
@@ -291,8 +455,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       alert('Введите ID собеседника');
     }
+	 elements.sendMessageBtn.addEventListener('click', sendMessage);
   });
   
+  elements.toggleChatBtn.addEventListener('click', () => {
+    elements.chatContainer.classList.toggle('hidden');
+  });
+	
+
   elements.findRandomBtn.addEventListener('click', findRandomPartner);
   
   elements.muteBtn.addEventListener('click', () => {
@@ -313,7 +483,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   
   // Проверка доступности сервера
-  async function checkServer() {
+ async function checkServer() {
     try {
       const response = await fetch(`https://${config.peerServer.host}/health`);
       if (!response.ok) throw new Error('Server not healthy');
