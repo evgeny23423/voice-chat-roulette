@@ -21,9 +21,9 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Хранилища данных
-const activePeers = new Map(); // Для PeerJS соединений
-const chatMessages = []; // Для сообщений чата
-const activeChatUsers = new Set(); // Для WebSocket соединений чата
+const activePeers = new Map();
+const chatMessages = [];
+const activeChatUsers = new Set();
 
 // Инициализация HTTP сервера
 const server = app.listen(PORT, '0.0.0.0', () => {
@@ -35,38 +35,38 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   `);
 });
 
-// Инициализация WebSocket сервера
+// WebSocket Server
 const wss = new WebSocket.Server({ server });
 
-// Обработчики WebSocket
 wss.on('connection', (ws) => {
   activeChatUsers.add(ws);
   broadcastOnlineCount();
-  
-  // Отправляем историю сообщений новому клиенту
-  ws.send(JSON.stringify({ 
-    type: 'history', 
-    messages: chatMessages.slice(-50) 
+
+  // Отправляем историю сообщений
+  ws.send(JSON.stringify({
+    type: 'history',
+    messages: chatMessages.slice(-50)
   }));
 
   ws.on('message', (message) => {
     try {
-      const msg = JSON.parse(message);
+      const data = JSON.parse(message);
       
-      if (msg.type === 'message') {
-        // Добавляем метку времени и сохраняем сообщение
+      if (data.type === 'chat_message') {
         const chatMessage = {
-          ...msg,
-          timestamp: Date.now()
+          text: data.text,
+          timestamp: Date.now(),
+          type: 'chat_message'
         };
         
+        // Сохраняем сообщение
         chatMessages.push(chatMessage);
         
-        // Рассылаем сообщение всем подключенным клиентам
+        // Рассылаем всем клиентам
         broadcastMessage(chatMessage);
       }
     } catch (err) {
-      console.error('Chat message error:', err);
+      console.error('Error processing message:', err);
     }
   });
 
@@ -82,27 +82,22 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Функции для работы с WebSocket
+// Функция рассылки сообщений
 function broadcastMessage(message) {
+  const data = JSON.stringify(message);
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({
-        type: 'message',
-        ...message
-      }));
+      client.send(data);
     }
   });
 }
 
+// Функция обновления счетчика онлайн
 function broadcastOnlineCount() {
   const count = activeChatUsers.size;
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({
-        type: 'online_count',
-        count
-      }));
-    }
+  broadcastMessage({
+    type: 'online_count',
+    count
   });
 }
 
@@ -118,7 +113,7 @@ const peerServer = PeerServer({
   alive_timeout: 60000
 });
 
-// Обработчики событий PeerServer
+// Обработчики PeerServer
 peerServer.on('connection', (client) => {
   const clientId = client.id;
   activePeers.set(clientId, Date.now());
@@ -138,7 +133,7 @@ peerServer.on('connection', (client) => {
 // Очистка неактивных пиров
 setInterval(() => {
   const now = Date.now();
-  const timeout = 5 * 60 * 1000; // 5 минут
+  const timeout = 5 * 60 * 1000;
   
   activePeers.forEach((lastActive, peerId) => {
     if (now - lastActive > timeout) {
