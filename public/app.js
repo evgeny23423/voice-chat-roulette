@@ -143,22 +143,13 @@ function sendMessage() {
 function updateOnlineCount(count) {
   if (count !== undefined) {
     state.onlineCount = count;
-  }
-  if (elements.onlineCounter) {
-    elements.onlineCounter.textContent = `Онлайн: ${state.onlineCount}`;
+    if (elements.onlineCounter) {
+      elements.onlineCounter.textContent = `Онлайн: ${state.onlineCount}`;
+    }
   }
 }
 
 
-function updateOnlineCount(count) {
-  if (count !== undefined) {
-    state.onlineCount = count;
-  }
-  if (elements.onlineCounter) {
-    elements.onlineCounter.textContent = `Онлайн: ${state.onlineCount}`;
-  }
-}
-  
   
   messagesToShow.forEach(msg => {
     const messageEl = document.createElement('div');
@@ -457,13 +448,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 	 elements.sendMessageBtn.addEventListener('click', sendMessage);
   });
   
-  elements.toggleChatBtn.addEventListener('click', () => {
-    elements.chatContainer.classList.toggle('hidden');
-  });
-	
+ 	
 
-  elements.findRandomBtn.addEventListener('click', findRandomPartner);
   
+  elements.findRandomBtn.addEventListener('click', findRandomPartner);
+  elements.muteBtn.addEventListener('click', toggleMute);
   elements.muteBtn.addEventListener('click', () => {
     if (state.localStream) {
       state.isMuted = !state.isMuted;
