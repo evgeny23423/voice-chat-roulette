@@ -239,6 +239,7 @@ state.peer.on('open', (id) => {
       console.error('Error answering call:', err);
     }
   });
+} 
   
 
 // Запрос доступа к микрофону
