@@ -176,11 +176,6 @@ function initPeerConnection() {
     iceServers: config.iceServers
   });
 
-  state.peer.on('open', (id) => {
-    state.myId = id;
-    elements.myId.textContent = id;
-    updateStatus('connected');
-    console.log('My peer ID is: ' + id);
     
     // Инициализируем чат и счетчик онлайн
     initChat();
