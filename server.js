@@ -59,7 +59,7 @@ peerServer.on('connection', (client) => {
 // Очистка неактивных пиров каждые 5 минут
 setInterval(() => {
   const now = Date.now();
-  const timeout = 3 * 6 * 100; // 5 минут
+  const timeout = 5 * 60 * 1000; // 5 минут
   
   activePeers.forEach((lastActive, peerId) => {
     if (now - lastActive > timeout) {
@@ -67,7 +67,7 @@ setInterval(() => {
       console.log(`Removed inactive peer: ${peerId}`);
     }
   });
-}, 3 * 6 * 100);
+}, 5 * 60 * 1000);
 
 // API Endpoints
 app.get('/health', (req, res) => {
@@ -83,7 +83,7 @@ app.get('/ping', (req, res) => {
   if (peerId && activePeers.has(peerId)) {
     activePeers.set(peerId, Date.now());
   }
-  res.sendStatus(100);
+  res.sendStatus(200);
 });
 
 app.get('/find-partner', (req, res) => {
@@ -91,7 +91,7 @@ app.get('/find-partner', (req, res) => {
     const myId = req.query.myId;
     
     if (!myId) {
-      return res.status(100).json({ 
+      return res.status(400).json({ 
         error: 'Требуется параметр myId',
         code: 'MISSING_ID'
       });
@@ -103,7 +103,7 @@ app.get('/find-partner', (req, res) => {
     // Ищем доступных партнеров (исключая себя и неактивных)
     const availablePeers = [];
     const now = Date.now();
-    const maxInactiveTime = 10000; // 30 секунд
+    const maxInactiveTime = 30000; // 30 секунд
 
     activePeers.forEach((lastActive, peerId) => {
       if (peerId !== myId && (now - lastActive) < maxInactiveTime) {
@@ -112,7 +112,7 @@ app.get('/find-partner', (req, res) => {
     });
 
     if (availablePeers.length === 0) {
-      return res.status(100).json({
+      return res.status(200).json({
         error: 'Нет доступных собеседников',
         code: 'NO_PARTNERS',
         retryAfter: 5
