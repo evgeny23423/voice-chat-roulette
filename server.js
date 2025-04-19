@@ -2,11 +2,10 @@ const express = require('express');
 const { PeerServer } = require('peer');
 const cors = require('cors');
 const path = require('path');
-const WebSocket = require('ws');
+const http = require('http');
 
 const app = express();
 const PORT = process.env.PORT || 9000;
-const PEER_PORT = process.env.PEER_PORT || 9001;
 
 // Middleware
 app.use(cors({
@@ -20,22 +19,22 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Peer Server
+// Создаем HTTP сервер
+const server = http.createServer(app);
+
+// Инициализация PeerServer на том же порту
 const peerServer = PeerServer({
-  port: PEER_PORT,
+  port: PORT,
   path: '/peerjs',
   proxied: true,
-  ssl: {},
   allow_discovery: true,
-  key: 'peerjs',
-  concurrent_limit: 1000,
-  alive_timeout: 60000
+  key: 'peerjs'
 });
 
-// Хранилище активных пиров с таймстемпами
+// Хранилище активных пиров
 const activePeers = new Map();
 
-// Обработчики событий PeerServer
+// Обработчики PeerServer
 peerServer.on('connection', (client) => {
   const clientId = client.id;
   activePeers.set(clientId, Date.now());
@@ -45,10 +44,6 @@ peerServer.on('connection', (client) => {
     activePeers.delete(clientId);
     console.log('Peer disconnected:', clientId);
   });
-   client.on('close', () => {
-    activePeers.delete(clientId);
-    broadcastOnlineCount();
-  });
 
   client.on('error', (err) => {
     console.error('Peer error:', err);
@@ -56,18 +51,16 @@ peerServer.on('connection', (client) => {
   });
 });
 
-// Очистка неактивных пиров каждые 5 минут
+// Очистка неактивных пиров
 setInterval(() => {
   const now = Date.now();
-  const timeout = 5 * 60 * 1000; // 5 минут
-  
   activePeers.forEach((lastActive, peerId) => {
-    if (now - lastActive > timeout) {
+    if (now - lastActive > 300000) { // 5 минут
       activePeers.delete(peerId);
       console.log(`Removed inactive peer: ${peerId}`);
     }
   });
-}, 5 * 60 * 1000);
+}, 60000);
 
 // API Endpoints
 app.get('/health', (req, res) => {
@@ -97,81 +90,44 @@ app.get('/find-partner', (req, res) => {
       });
     }
 
-    // Обновляем активность текущего пира
     activePeers.set(myId, Date.now());
-
-    // Ищем доступных партнеров (исключая себя и неактивных)
     const availablePeers = [];
     const now = Date.now();
-    const maxInactiveTime = 30000; // 30 секунд
 
     activePeers.forEach((lastActive, peerId) => {
-      if (peerId !== myId && (now - lastActive) < maxInactiveTime) {
+      if (peerId !== myId && (now - lastActive) < 30000) {
         availablePeers.push(peerId);
       }
     });
 
     if (availablePeers.length === 0) {
-      return res.status(200).json({
+      return res.status(404).json({
         error: 'Нет доступных собеседников',
-        code: 'NO_PARTNERS',
-        retryAfter: 5
+        code: 'NO_PARTNERS'
       });
     }
 
-    // Выбираем случайного партнера
     const partnerId = availablePeers[Math.floor(Math.random() * availablePeers.length)];
+    res.json({ partnerId });
     
-    res.json({ 
-      partnerId,
-      timestamp: Date.now()
-    });
-
   } catch (err) {
     console.error('Ошибка поиска партнера:', err);
-    res.status(500).json({ 
-      error: 'Внутренняя ошибка сервера',
-      code: 'SERVER_ERROR'
-    });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Frontend
-app.get('/online-count', (req, res) => {
-  try {
-    res.json({
-      success: true,
-      count: activePeers.size,
-      timestamp: Date.now()
-    });
-  } catch (err) {
-    console.error('Online count error:', err);
-    res.status(500).json({ success: false, error: 'Internal server error' });
-  }
-});
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-
-// Error handling
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`
-  Server is running:
-  - Web: http://localhost:${PORT}
-  - PeerJS: wss://web-production-175e.up.railway.app/peerjs
-  - Health: https://web-production-175e.up.railway.app/health
-  `);
+// Запуск сервера
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  process.exit(0);
+  console.log('Shutting down gracefully...');
+  server.close(() => process.exit(0));
 });
