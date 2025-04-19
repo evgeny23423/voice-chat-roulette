@@ -1,10 +1,12 @@
-
+{
   "name": "voice-chat-roulette",
   "version": "1.0.0",
   "description": "Voice chat roulette with PeerJS",
   "main": "server.js",
+  "type": "module", // Добавьте эту строку если используете ES modules
   "scripts": {
     "start": "node server.js",
+    "dev": "nodemon server.js", // Опционально для разработки
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -12,7 +14,8 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "peer": "^0.6.1",
-    "peerjs": "^1.4.7"
+    "peerjs": "^1.4.7",
+    "ws": "^8.13.0" // Добавьте если используете WebSocket
   },
   "engines": {
     "node": ">=18.0.0",
