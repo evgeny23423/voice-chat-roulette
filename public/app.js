@@ -151,24 +151,6 @@ function updateOnlineCount(count) {
 
 
   
-  messagesToShow.forEach(msg => {
-    const messageEl = document.createElement('div');
-    messageEl.className = 'message';
-    
-    const timeEl = document.createElement('span');
-    timeEl.className = 'message-time';
-    timeEl.textContent = new Date(msg.timestamp).toLocaleTimeString();
-    
-    const textEl = document.createElement('div');
-    textEl.className = 'message-text';
-    textEl.textContent = msg.text;
-    
-    messageEl.appendChild(timeEl);
-    messageEl.appendChild(textEl);
-    elements.messagesContainer.appendChild(messageEl);
-	elements.messagesContainer.scrollTop = elements.messagesContainer.scrollHeight;
-  });
-   
 function initPeerConnection() {
   state.peer = new Peer({
     config: config.peerServer,
