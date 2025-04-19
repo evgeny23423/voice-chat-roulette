@@ -4,8 +4,8 @@
   "description": "Voice chat roulette with PeerJS",
   "main": "server.js",
   "scripts": {
-    "start": "node --max-old-space-size=512 server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "build": "echo 'No build needed'"
   },
   "dependencies": {
     "cors": "^2.8.5",

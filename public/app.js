@@ -1,16 +1,16 @@
 const config = {
   peerServer: {
-    host: 'web-production-175e.up.railway.app',
+    host: window.location.hostname, // Автоматическое определение хоста
     path: '/peerjs',
-    secure: true,
+    secure: window.location.protocol === 'https:',
     debug: 3
   },
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:global.stun.twilio.com:3478' }
   ],
-   chatServer: {
-    url: 'https://web-production-175e.up.railway.app/chat',
+  chatServer: {
+    url: `wss://${window.location.hostname}/chat`,
     reconnectDelay: 5000
   }
 };
@@ -63,7 +63,7 @@ function initChat() {
     state.chatSocket.close();
   }
 
-  state.chatSocket = new WebSocket(`wss://${config.peerServer.host}/chat`);
+ state.chatSocket = new WebSocket(config.chatServer.url);
 
   state.chatSocket.onopen = () => {
     state.isChatConnected = true;
@@ -153,8 +153,11 @@ function updateOnlineCount(count) {
   
 function initPeerConnection() {
   state.peer = new Peer({
-    config: config.peerServer,
-    iceServers: config.iceServers
+    host: config.peerServer.host,
+    port: window.location.port || (config.peerServer.secure ? 443 : 80),
+    path: config.peerServer.path,
+    secure: config.peerServer.secure,
+    config: { iceServers: config.iceServers }
   });
 
   state.peer.on('open', (id) => {

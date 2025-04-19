@@ -9,16 +9,19 @@ const app = express();
 const PORT = process.env.PORT || 9000;
 
 // Упрощенный CORS для Railway
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use('/peerjs', PeerServer({
+  port: PORT,
+  path: '/peerjs',
+proxied: true}));
 
 // Хранилища данных
 const activePeers = new Map();
 const chatMessages = [];
 
 // Создаем HTTP сервер
-const server = http.createServer(app);
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 // Инициализация WebSocket сервера
 const wss = new WebSocket.Server({ server });
@@ -54,11 +57,11 @@ wss.on('connection', (ws) => {
 });
 
 // PeerServer на том же порту через Express
-app.use('/peerjs', PeerServer({
-  proxied: true,
-  allow_discovery: true,
-  key: 'peerjs'
-}));
+peerServer: {
+  host: window.location.hostname,
+  path: '/peerjs',
+  secure: window.location.protocol === 'https:'
+}); 
 
 // Упрощенный healthcheck
 app.get('/health', (req, res) => {
@@ -78,4 +81,10 @@ server.listen(PORT, '0.0.0.0', () => {
 // Обработка ошибок
 process.on('uncaughtException', (err) => {
   console.error('Uncaught error:', err);
+});
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: Date.now()
+  });
 });
