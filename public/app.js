@@ -169,43 +169,36 @@ function updateOnlineCount(count) {
 	elements.messagesContainer.scrollTop = elements.messagesContainer.scrollHeight;
   });
    
-
 function initPeerConnection() {
   state.peer = new Peer({
     config: config.peerServer,
     iceServers: config.iceServers
   });
 
-    
+  state.peer.on('open', (id) => {
+    state.myId = id;
+    elements.myId.textContent = id;
+    updateStatus('connected');
+    console.log('My peer ID is: ' + id);
+
     // Инициализируем чат и счетчик онлайн
     initChat();
     updateOnlineCount();
+    
     state.onlineCheckInterval = setInterval(() => {
       fetch('https://web-production-175e.up.railway.app/online-count')
         .then(response => response.json())
         .then(data => updateOnlineCount(data.count))
         .catch(console.error);
     }, 30000);
+
+    state.keepAliveInterval = setInterval(() => {
+      if (state.myId) {
+        fetch(`https://web-production-175e.up.railway.app/ping?peerId=${state.myId}`)
+          .catch(console.error);
+      }
+    }, 20000);
   });
-
-
-
-  
- state.keepAliveInterval = setInterval(() => {
-  if (state.myId) {
-    fetch(`https://web-production-175e.up.railway.app/ping?peerId=${state.myId}`)
-      .catch(console.error);
-  }
-}, 20000);
-
-state.peer.on('open', (id) => {
-  state.myId = id;
-  elements.myId.textContent = id;
-  updateStatus('connected');
-  console.log('My peer ID is: ' + id);
-
-
-
 
   state.peer.on('error', (err) => {
     console.error('Peer error:', err);
@@ -234,7 +227,8 @@ state.peer.on('open', (id) => {
       console.error('Error answering call:', err);
     }
   });
-} 
+}
+
   
 
 // Запрос доступа к микрофону
@@ -441,14 +435,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       alert('Введите ID собеседника');
     }
-	 elements.sendMessageBtn.addEventListener('click', sendMessage);
   });
   
  	
 
   
   elements.findRandomBtn.addEventListener('click', findRandomPartner);
-  elements.muteBtn.addEventListener('click', toggleMute);
+  
   elements.muteBtn.addEventListener('click', () => {
     if (state.localStream) {
       state.isMuted = !state.isMuted;
