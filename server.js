@@ -2,6 +2,7 @@ const express = require('express');
 const { PeerServer } = require('peer');
 const cors = require('cors');
 const path = require('path');
+const http = require('http'); // Добавлен отсутствующий импорт
 
 const app = express();
 const PORT = process.env.PORT || 9000;
@@ -21,9 +22,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Создаем HTTP сервер
 const server = http.createServer(app);
 
-// Инициализация PeerServer на том же порту
+// Инициализация PeerServer
 const peerServer = PeerServer({
-  port: PORT,
+  server: server, // Используем существующий HTTP сервер
   path: '/peerjs',
   proxied: true,
   allow_discovery: true,
@@ -122,11 +123,16 @@ app.get('*', (req, res) => {
 
 // Запуск сервера
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`
+  Сервер запущен:
+  - Основной порт: ${PORT}
+  - PeerServer: /peerjs
+  - Healthcheck: /health
+  `);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('Shutting down gracefully...');
+  console.log('Завершение работы...');
   server.close(() => process.exit(0));
 });
