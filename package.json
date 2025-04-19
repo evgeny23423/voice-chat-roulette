@@ -1,11 +1,11 @@
-{
+
   "name": "voice-chat-roulette",
   "version": "1.0.0",
   "description": "Voice chat roulette with PeerJS",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "echo 'No build needed'"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "cors": "^2.8.5",

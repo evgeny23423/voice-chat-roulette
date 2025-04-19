@@ -1,22 +1,16 @@
 const config = {
   peerServer: {
-    host: window.location.hostname,
+    host: 'web-production-175e.up.railway.app',
     path: '/peerjs',
-    secure: window.location.protocol === 'https:',
+    secure: true,
     debug: 3
   },
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:global.stun.twilio.com:3478' }
-  ],
-  chatServer: {
-    url: window.location.protocol === 'https:' 
-      ? `wss://${window.location.hostname}/chat` 
-      : `ws://${window.location.hostname}/chat`,
-    reconnectDelay: 5000
-  }
+  ]
 };
-
+// Состояние приложения
 const state = {
   peer: null,
   currentCall: null,
@@ -29,12 +23,10 @@ const state = {
   retryCount: 0,
   onlineCount: 0,
   onlineCheckInterval: null,
-  keepAliveInterval: null,
-  chatSocket: null,
-  chatMessages: [],
-  isChatConnected: false
+  keepAliveInterval: null
 };
 
+// DOM элементы
 const elements = {
   myId: document.getElementById('myId'),
   partnerId: document.getElementById('partnerId'),
@@ -51,164 +43,41 @@ const elements = {
   remoteAudio: document.getElementById('remoteAudio'),
   searchSpinner: document.getElementById('searchSpinner'),
   copyIdBtn: document.getElementById('copyIdBtn'),
-  onlineCounter: document.getElementById('onlineCounter'),
-  chatContainer: document.getElementById('chatContainer'),
-  messagesContainer: document.getElementById('messagesContainer'),
-  messageInput: document.getElementById('messageInput'),
-  sendMessageBtn: document.getElementById('sendMessageBtn'),
-  toggleChatBtn: document.getElementById('toggleChatBtn'),
+  onlineCounter: document.getElementById('onlineCounter')
 };
-
-function initChat() {
-  if (state.chatSocket) {
-    state.chatSocket.close();
-  }
-
-  try {
-    state.chatSocket = new WebSocket(config.chatServer.url);
-
-    state.chatSocket.onopen = () => {
-      state.isChatConnected = true;
-      console.log('Chat connected');
-      state.chatSocket.send(JSON.stringify({ type: 'get_history' }));
-    };
-
-    state.chatSocket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        
-        if (data.type === 'history') {
-          state.chatMessages = data.messages || [];
-          renderMessages();
-        } 
-        else if (data.type === 'chat_message') {
-          state.chatMessages.push(data);
-          renderMessages();
-        }
-        else if (data.type === 'online_count') {
-          updateOnlineCount(data.count);
-        }
-      } catch (err) {
-        console.error('Error parsing message:', err);
-      }
-    };
-
-    state.chatSocket.onclose = () => {
-      state.isChatConnected = false;
-      console.log('Chat disconnected. Reconnecting...');
-      setTimeout(initChat, config.chatServer.reconnectDelay);
-    };
-
-    state.chatSocket.onerror = (err) => {
-      console.error('Chat error:', err);
-    };
-  } catch (err) {
-    console.error('WebSocket creation error:', err);
-    setTimeout(initChat, config.chatServer.reconnectDelay);
-  }
-}
-
-function renderMessages() {
-  if (!elements.messagesContainer) return;
-  
-  elements.messagesContainer.innerHTML = '';
-  const messagesToShow = state.chatMessages.slice(-50);
-  
-  messagesToShow.forEach(msg => {
-    const messageEl = document.createElement('div');
-    messageEl.className = 'message';
-    
-    const timeEl = document.createElement('span');
-    timeEl.className = 'message-time';
-    timeEl.textContent = new Date(msg.timestamp).toLocaleTimeString();
-    
-    const textEl = document.createElement('div');
-    textEl.className = 'message-text';
-    textEl.textContent = msg.text;
-    
-    messageEl.appendChild(timeEl);
-    messageEl.appendChild(textEl);
-    elements.messagesContainer.appendChild(messageEl);
-  });
-  
-  elements.messagesContainer.scrollTop = elements.messagesContainer.scrollHeight;
-}
-
-function sendMessage() {
-  const text = elements.messageInput?.value.trim();
-  if (!text || !state.isChatConnected) return;
-
-  const message = {
-    type: 'chat_message',
-    text: text,
-    timestamp: Date.now()
-  };
-
-  try {
-    state.chatSocket.send(JSON.stringify(message));
-    elements.messageInput.value = '';
-    elements.messageInput.focus();
-  } catch (err) {
-    console.error('Error sending message:', err);
-  }
-}
-
-function updateOnlineCount(count) {
-  if (count !== undefined && elements.onlineCounter) {
-    state.onlineCount = count;
-    elements.onlineCounter.textContent = `Онлайн: ${state.onlineCount}`;
-  }
-}
-
 function initPeerConnection() {
-  const port = window.location.port || (config.peerServer.secure ? 443 : 80);
-  
   state.peer = new Peer({
-    host: config.peerServer.host,
-    port: port,
-    path: config.peerServer.path,
-    secure: config.peerServer.secure,
-    config: { 
-      iceServers: config.iceServers,
-      debug: config.peerServer.debug
-    }
+    config: config.peerServer,
+    iceServers: config.iceServers
   });
+
 
   state.peer.on('open', (id) => {
     state.myId = id;
-    if (elements.myId) elements.myId.textContent = id;
+    elements.myId.textContent = id;
     updateStatus('connected');
     console.log('My peer ID is: ' + id);
-
-    initChat();
-    updateOnlineCount();
-    
-    state.onlineCheckInterval = setInterval(() => {
-      fetch('/online-count')
-        .then(response => response.json())
-        .then(data => updateOnlineCount(data.count))
-        .catch(console.error);
-    }, 30000);
-
-    state.keepAliveInterval = setInterval(() => {
-      if (state.myId) {
-        fetch(`/ping?peerId=${state.myId}`).catch(console.error);
-      }
-    }, 20000);
+	updateOnlineCount();
+    state.onlineCheckInterval = setInterval(updateOnlineCount, 30000);
   });
+  
+ state.keepAliveInterval = setInterval(() => {
+  if (state.myId) {
+    fetch(`https://web-production-175e.up.railway.app/ping?peerId=${state.myId}`)
+      .catch(console.error);
+  }
+}, 20000);
+
 
   state.peer.on('error', (err) => {
     console.error('Peer error:', err);
     updateStatus('error');
     
-    const delay = Math.min(2000 * Math.pow(2, state.retryCount), 30000);
-    state.retryCount = state.retryCount < 10 ? state.retryCount + 1 : 10;
-    
-    setTimeout(() => {
-      if (!state.peer || state.peer.disconnected) {
-        initPeerConnection();
-      }
-    }, delay);
+    // Автоматический реконнект
+    if (state.retryCount < 3) {
+      state.retryCount++;
+      setTimeout(initPeerConnection, 2000 * state.retryCount);
+    }
   });
 
   state.peer.on('call', async (call) => {
@@ -220,16 +89,16 @@ function initPeerConnection() {
       call.answer(state.localStream);
       setupCall(call);
       
-      if (elements.activeCallPanel) {
-        elements.activeCallPanel.classList.remove('hidden');
-        elements.partnerIdDisplay.textContent = call.peer;
-      }
+      // Показываем панель звонка
+      elements.activeCallPanel.classList.remove('hidden');
+      elements.partnerIdDisplay.textContent = call.peer;
     } catch (err) {
       console.error('Error answering call:', err);
     }
   });
-}
+} 
 
+// Запрос доступа к микрофону
 async function requestMicrophone() {
   try {
     state.localStream = await navigator.mediaDevices.getUserMedia({ 
@@ -243,21 +112,18 @@ async function requestMicrophone() {
     return false;
   }
 }
-
 async function findRandomPartner(retryCount = 0) {
   if (!state.peer?.id) {
     alert('Сначала установите подключение к серверу');
     return;
   }
 
-  if (elements.searchSpinner) {
-    elements.searchSpinner.classList.remove('hidden');
-    elements.findRandomBtn.disabled = true;
-    elements.findRandomBtn.textContent = 'Поиск...';
-  }
+  elements.searchSpinner.classList.remove('hidden');
+  elements.findRandomBtn.disabled = true;
+  elements.findRandomBtn.textContent = 'Поиск...';
 
   try {
-    const response = await fetch(`/find-partner?myId=${state.myId}`, {
+    const response = await fetch(`https://web-production-175e.up.railway.app/find-partner?myId=${state.myId}`, {
       headers: {
         'Content-Type': 'application/json'
       }
@@ -288,18 +154,16 @@ async function findRandomPartner(retryCount = 0) {
 
   } catch (err) {
     console.error('Ошибка поиска:', err);
-    if (elements.findRandomBtn) {
-      elements.findRandomBtn.textContent = 'Попробовать снова';
-    }
+    elements.findRandomBtn.textContent = 'Попробовать снова';
     alert(err.message);
   } finally {
-    if (elements.searchSpinner) {
-      elements.searchSpinner.classList.add('hidden');
-      elements.findRandomBtn.disabled = false;
-    }
+    elements.searchSpinner.classList.add('hidden');
+    elements.findRandomBtn.disabled = false;
   }
 }
 
+
+// Звонок указанному собеседнику
 async function callPeer(peerId) {
   if (!state.localStream) {
     const hasAccess = await requestMicrophone();
@@ -310,71 +174,88 @@ async function callPeer(peerId) {
     const call = state.peer.call(peerId, state.localStream);
     setupCall(call);
     
-    if (elements.activeCallPanel) {
-      elements.activeCallPanel.classList.remove('hidden');
-      elements.partnerIdDisplay.textContent = peerId;
-    }
+    // Показываем панель звонка
+    elements.activeCallPanel.classList.remove('hidden');
+    elements.partnerIdDisplay.textContent = peerId;
   } catch (err) {
     console.error('Call error:', err);
     alert('Ошибка при установке соединения');
   }
 }
-
+async function updateOnlineCount() {
+  try {
+    const response = await fetch('https://web-production-175e.up.railway.app/online-count');
+    const data = await response.json();
+    state.onlineCount = data.count;
+    elements.onlineCounter.textContent = `Онлайн: ${data.count}`;
+  } catch (err) {
+    console.error('Ошибка получения счетчика:', err);
+  }
+} 
+// Настройка обработчиков звонка
 function setupCall(call) {
   state.currentCall = call;
   state.callStartTime = new Date();
   startCallTimer();
 
   call.on('stream', (remoteStream) => {
-    if (elements.remoteAudio) {
-      elements.remoteAudio.srcObject = remoteStream;
-    }
+    elements.remoteAudio.srcObject = remoteStream;
     state.isConnected = true;
     updateStatus('in-call');
   });
 
-  call.on('close', endCall);
-  call.on('error', endCall);
+  call.on('close', () => {
+    endCall();
+  });
+
+  call.on('error', (err) => {
+    console.error('Call error:', err);
+    endCall();
+  });
 }
 
+// Завершение звонка
 function endCall() {
   if (state.currentCall) {
     state.currentCall.close();
   }
   
-  clearInterval(state.callTimer);
-  clearInterval(state.onlineCheckInterval);
-  clearInterval(state.keepAliveInterval);
+  if (state.callTimer) {
+    clearInterval(state.callTimer);
+  }
+   if (state.onlineCheckInterval) {
+    clearInterval(state.onlineCheckInterval);
+  }
   
-  if (elements.remoteAudio) {
+  if (elements.remoteAudio.srcObject) {
     elements.remoteAudio.srcObject = null;
   }
   
-  if (elements.activeCallPanel) {
-    elements.activeCallPanel.classList.add('hidden');
-  }
+  if (state.keepAliveInterval) {
+  clearInterval(state.keepAliveInterval);
+}
   
   state.currentCall = null;
   state.isConnected = false;
+  elements.activeCallPanel.classList.add('hidden');
   updateStatus('connected');
-}
+}  
 
+
+// Таймер звонка
 function startCallTimer() {
   let seconds = 0;
   state.callTimer = setInterval(() => {
     seconds++;
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    if (elements.callDuration) {
-      elements.callDuration.textContent = 
-        `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-    }
+    elements.callDuration.textContent = 
+      `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   }, 1000);
 }
 
+// Обновление статуса подключения
 function updateStatus(status) {
-  if (!elements.statusDot || !elements.statusText) return;
-  
   elements.statusDot.className = 'status-dot';
   elements.statusText.textContent = '';
   
@@ -397,97 +278,50 @@ function updateStatus(status) {
   }
 }
 
-async function checkServer() {
-  try {
-    const response = await fetch('/health');
-    if (!response.ok) throw new Error('Server not healthy');
-    return true;
-  } catch (err) {
-    console.error('Server check failed:', err);
-    return false;
-  }
-}
-
-function setupEventListeners() {
-  if (elements.sendMessageBtn) {
-    elements.sendMessageBtn.addEventListener('click', sendMessage);
-  }
-  
-  if (elements.messageInput) {
-    elements.messageInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage();
-    });
-  }
-  
-  if (elements.toggleChatBtn) {
-    elements.toggleChatBtn.addEventListener('click', () => {
-      if (elements.chatContainer) {
-        elements.chatContainer.classList.toggle('hidden');
-      }
-    });
-  }
-  
-  if (elements.callBtn) {
-    elements.callBtn.addEventListener('click', () => {
-      const partnerId = elements.partnerId?.value.trim();
-      if (partnerId) {
-        callPeer(partnerId);
-      } else {
-        alert('Введите ID собеседника');
-      }
-    });
-  }
-  
-  if (elements.findRandomBtn) {
-    elements.findRandomBtn.addEventListener('click', findRandomPartner);
-  }
-  
-  if (elements.muteBtn) {
-    elements.muteBtn.addEventListener('click', () => {
-      if (state.localStream) {
-        state.isMuted = !state.isMuted;
-        state.localStream.getAudioTracks()[0].enabled = !state.isMuted;
-        elements.muteBtn.classList.toggle('muted', state.isMuted);
-      }
-    });
-  }
-  
-  if (elements.hangupBtn) {
-    elements.hangupBtn.addEventListener('click', endCall);
-  }
-  
-  if (elements.copyIdBtn) {
-    elements.copyIdBtn.addEventListener('click', async () => {
-      if (state.myId) {
-        try {
-          await navigator.clipboard.writeText(state.myId);
-          const originalText = elements.copyIdBtn.textContent;
-          elements.copyIdBtn.textContent = 'Скопировано!';
-          setTimeout(() => {
-            elements.copyIdBtn.textContent = originalText;
-          }, 2000);
-        } catch (err) {
-          console.error('Copy failed:', err);
-          alert('Не удалось скопировать ID');
-        }
-      }
-    });
-  }
-}
-
+// Инициализация приложения
 document.addEventListener('DOMContentLoaded', async () => {
-  setupEventListeners();
-  
-  if (!await checkServer()) {
-    alert('Сервер временно недоступен. Попробуйте позже.');
-    return;
-  }
-
+  // Инициализация PeerJS
   await initPeerConnection();
   
-  window.addEventListener('resize', () => {
-    if (elements.messagesContainer) {
-      elements.messagesContainer.scrollTop = elements.messagesContainer.scrollHeight;
+  // Обработчики событий
+  elements.callBtn.addEventListener('click', () => {
+    const partnerId = elements.partnerId.value.trim();
+    if (partnerId) {
+      callPeer(partnerId);
+    } else {
+      alert('Введите ID собеседника');
     }
   });
+  
+  elements.findRandomBtn.addEventListener('click', findRandomPartner);
+  
+  elements.muteBtn.addEventListener('click', () => {
+    if (state.localStream) {
+      state.isMuted = !state.isMuted;
+      state.localStream.getAudioTracks()[0].enabled = !state.isMuted;
+      elements.muteBtn.classList.toggle('muted', state.isMuted);
+    }
+  });
+  
+  elements.hangupBtn.addEventListener('click', endCall);
+  
+  elements.copyIdBtn.addEventListener('click', () => {
+    if (state.myId) {
+      navigator.clipboard.writeText(state.myId);
+      alert('ID скопирован в буфер обмена');
+    }
+  });
+  
+  // Проверка доступности сервера
+  async function checkServer() {
+    try {
+      const response = await fetch(`https://${config.peerServer.host}/health`);
+      if (!response.ok) throw new Error('Server not healthy');
+    } catch (err) {
+      console.error('Server check failed:', err);
+      alert('Сервер временно недоступен. Попробуйте позже.');
+    }
+  }
+  
+  await checkServer();
 });
