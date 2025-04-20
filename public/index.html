@@ -101,7 +101,7 @@
 
 <div id="chatContainer" class="chat-container hidden">
   <div class="chat-header">
-    <h3>Анонимный чат <span id="onlineCounter"></span></h3>
+    <h3>заметки <span id="onlineCounter"></span></h3>
     <button id="toggleChatBtn" class="close-chat-btn">×</button>
   </div>
   <div id="messagesContainer" class="messages-container"></div>
@@ -111,38 +111,19 @@
   </div>
 </div>
  
-<button id="toggleChatBtn" class="open-chat-btn" style="left: 20px; right: auto;">Чат</button>
+<button id="toggleChatBtn" class="open-chat-btn" style="left: 20px; right: auto;">ты хиккан</button>
 	
-  <div class="card-header">
-    <h2>Анонимная доска</h2>
-  </div>
-  <div class="chat-content">
-    <div id="messagesContainer" class="messages-container"></div>
-    <div class="message-input">
-      <input type="text" id="messageInput" placeholder="Написать сообщение..." class="text-input">
-      <button id="sendMessageBtn" class="primary-button small">Отправить</button>
-    </div>
-  </div>
 </section>
     </main>
 
-    <footer class="app-footer">
-      <p>© 2025 Voice Roulette | Анонимные голосовые чаты</p>
-    </footer>
+ <div id="custom-chat-container">
+    <div class="chat-header">
+      <h3>Анонимный чат</h3>
+    </div>
+    <div class="chat-content">
+      <div id="chat_xikkaincelchat" style="width: 111%; height: 1000%;"></div>
+    </div>
   </div>
- <div id="custom-chat-container" style="
-  position: fixed;
-  bottom: 100px;    /* Отступ от нижнего края */
-  left: 50%;       /* Центрирование по горизонтали */
-  transform: translateX(-43%); /* Корректировка центра */
-  width: 90%;      /* Ширина контейнера */
-  max-width: 600px; /* Максимальная ширина */
-  height: 300px;   /* Высота контейнера */
-  background: white;
-  z-index: 1000;
-">
-  <div id="chat_xikkaincelchat" style="width: 100%; height: 100%;"></div>
-</div>
   <script type="text/javascript">
   var chatovodOnLoad = chatovodOnLoad || [];
   chatovodOnLoad.push(function() {
@@ -169,8 +150,8 @@
   <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
  <script src="app.js"></script>
   <footer class="app-footer">
-      <p>© 2025 Voice Roulette | Анонимные голосовые чаты</p>
-    </footer>
+    <p>© 2025 Voice Roulette | Анонимные голосовые чаты</p>
+   </footer>
  
 </body>
 </html>
