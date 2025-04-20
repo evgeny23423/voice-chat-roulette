@@ -452,11 +452,7 @@ elements.toggleChatBtn.addEventListener('click', () => {
   align-items: center;
 }
 
-.messages-container {
-  flex: 1;
-  padding: 10px;
-  overflow-y: auto;
-}
+
 
 .message {
   margin-bottom: 10px;
