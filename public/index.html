@@ -99,29 +99,19 @@
         </div> 
 	  </section>
 
-<div id="chatContainer" class="chat-container hidden">
-  <div class="chat-header">
-    <h3>заметки <span id="onlineCounter"></span></h3>
-    <button id="toggleChatBtn" class="close-chat-btn">×</button>
-  </div>
-  <div id="messagesContainer" class="messages-container"></div>
-  <div class="chat-input">
-    <input type="text" id="messageInput" placeholder="Написать сообщение...">
-    <button id="sendMessageBtn">Отправить</button>
-  </div>
-</div>
+
  
-<button id="toggleChatBtn" class="open-chat-btn" style="left: 20px; right: auto;">ты хиккан</button>
+<button id="toggleChatBtn" class="open-chat-btn" style="left: 20px; right: auto;  ">ты хиккан</button>
 	
 </section>
     </main>
 
- <div id="custom-chat-container">
-    <div class="chat-header">
+ <div id="custom-chat-container" style="width: 450px; height: 100px;">
+  <div class="chat-header">
       <h3>Анонимный чат</h3>
     </div>
     <div class="chat-content">
-	  <div id="chat_xikkaincelchat" style="resize: vertical; overflow: auto;">
+	 <div id="chat_xikkaincelchat" style="resize: vertical; overflow: auto;">
 </div>
     </div>
   </div>
@@ -130,8 +120,8 @@
   chatovodOnLoad.push(function() {
     chatovod.addChatToDivId("chat_xikkaincelchat", {
       host: "xikkaincelchat.chatovod.com",
-      width: "90%",
-      height: "130%",
+      width: "100%",
+      height: "100%",
       defaultLanguage: "ru"
     });
   });
@@ -147,8 +137,7 @@
   })();
 </script>
 </div>
- 
-  <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+ <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
  <script src="app.js"></script>
   <footer class="app-footer">
     <p>© 2025 Voice Roulette | Анонимные голосовые чаты</p>
