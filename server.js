@@ -8,18 +8,15 @@ const app = express();
 const PORT = process.env.PORT || 9000;
 const PEER_PORT = process.env.PEER_PORT || 9001;
 
-// Конфигурация CORS
-const corsOptions = {
+// Middleware
+app.use(cors({
   origin: [
     'https://web-production-175e.up.railway.app',
-    'http://localhost:9000',
-    'https://your-frontend-domain.com' // Добавьте ваш домен
+    'http://localhost:9000'
   ],
   methods: ['GET', 'POST', 'OPTIONS'],
   credentials: true
-};
-
-app.use(cors(corsOptions));
+}));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -28,7 +25,7 @@ const activePeers = new Map();
 const chatMessages = [];
 const activeChatUsers = new Set();
 
-// Инициализация серверов
+// Инициализация HTTP сервера
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`
   Server is running:
@@ -38,14 +35,73 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   `);
 });
 
-// WebSocket Server с улучшенной обработкой ошибок
-const wss = new WebSocket.Server({ 
-  server,
-  clientTracking: true,
-  maxPayload: 1048576 // 1MB
+// WebSocket Server
+const wss = new WebSocket.Server({ server });
+
+wss.on('connection', (ws) => {
+  activeChatUsers.add(ws);
+  broadcastOnlineCount();
+
+  // Отправляем историю сообщений
+  ws.send(JSON.stringify({
+    type: 'history',
+    messages: chatMessages.slice(-50)
+  }));
+
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message);
+      
+      if (data.type === 'chat_message') {
+        const chatMessage = {
+          text: data.text,
+          timestamp: Date.now(),
+          type: 'chat_message'
+        };
+        
+        // Сохраняем сообщение
+        chatMessages.push(chatMessage);
+        
+        // Рассылаем всем клиентам
+        broadcastMessage(chatMessage);
+      }
+    } catch (err) {
+      console.error('Error processing message:', err);
+    }
+  });
+
+  ws.on('close', () => {
+    activeChatUsers.delete(ws);
+    broadcastOnlineCount();
+  });
+
+  ws.on('error', (err) => {
+    console.error('WebSocket error:', err);
+    activeChatUsers.delete(ws);
+    broadcastOnlineCount();
+  });
 });
 
-// Peer Server с оптимизациями для мобильных
+// Функция рассылки сообщений
+function broadcastMessage(message) {
+  const data = JSON.stringify(message);
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(data);
+    }
+  });
+}
+
+// Функция обновления счетчика онлайн
+function broadcastOnlineCount() {
+  const count = activeChatUsers.size;
+  broadcastMessage({
+    type: 'online_count',
+    count
+  });
+}
+
+// Peer Server
 const peerServer = PeerServer({
   port: PEER_PORT,
   path: '/peerjs',
@@ -54,119 +110,28 @@ const peerServer = PeerServer({
   allow_discovery: true,
   key: 'peerjs',
   concurrent_limit: 1000,
-  alive_timeout: 60000,
-  // Оптимизации для мобильных:
-  ping_interval: 3000,
-  destroy_unused_timeout: 45000,
-  expire_timeout: 45000,
-  ip_limit: 100
+  alive_timeout: 60000
 });
 
-// Обработчики WebSocket
-wss.on('connection', handleWebSocketConnection);
-
-function handleWebSocketConnection(ws) {
-  activeChatUsers.add(ws);
-  broadcastOnlineCount();
-
-  // Отправляем историю сообщений
-  sendInitialChatHistory(ws);
-
-  ws.on('message', handleWebSocketMessage);
-  ws.on('close', handleWebSocketClose);
-  ws.on('error', handleWebSocketError);
-}
-
-function sendInitialChatHistory(ws) {
-  try {
-    ws.send(JSON.stringify({
-      type: 'history',
-      messages: chatMessages.slice(-50)
-    }));
-  } catch (err) {
-    console.error('Error sending chat history:', err);
-  }
-}
-
-function handleWebSocketMessage(message) {
-  try {
-    const data = JSON.parse(message);
-    
-    if (data.type === 'chat_message' && data.text && data.text.trim()) {
-      const chatMessage = {
-        text: data.text.trim(),
-        timestamp: Date.now(),
-        type: 'chat_message'
-      };
-      
-      chatMessages.push(chatMessage);
-      broadcastMessage(chatMessage);
-    }
-  } catch (err) {
-    console.error('Error processing message:', err);
-  }
-}
-
-function handleWebSocketClose() {
-  activeChatUsers.delete(this);
-  broadcastOnlineCount();
-}
-
-function handleWebSocketError(err) {
-  console.error('WebSocket error:', err);
-  activeChatUsers.delete(this);
-  broadcastOnlineCount();
-}
-
-// Функции рассылки сообщений
-function broadcastMessage(message) {
-  const data = JSON.stringify(message);
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      try {
-        client.send(data);
-      } catch (err) {
-        console.error('Error broadcasting message:', err);
-      }
-    }
-  });
-}
-
-function broadcastOnlineCount() {
-  const count = activeChatUsers.size;
-  broadcastMessage({
-    type: 'online_count',
-    count,
-    timestamp: Date.now()
-  });
-}
-
 // Обработчики PeerServer
-peerServer.on('connection', handlePeerConnection);
-
-function handlePeerConnection(client) {
+peerServer.on('connection', (client) => {
   const clientId = client.id;
   activePeers.set(clientId, Date.now());
   console.log('Peer connected:', clientId);
 
-  client.on('close', () => handlePeerDisconnect(clientId));
-  client.on('error', (err) => handlePeerError(clientId, err));
-}
+  client.on('close', () => {
+    activePeers.delete(clientId);
+    console.log('Peer disconnected:', clientId);
+  });
 
-function handlePeerDisconnect(peerId) {
-  activePeers.delete(peerId);
-  console.log('Peer disconnected:', peerId);
-}
-
-function handlePeerError(peerId, err) {
-  console.error('Peer error:', peerId, err);
-  activePeers.delete(peerId);
-}
+  client.on('error', (err) => {
+    console.error('Peer error:', err);
+    activePeers.delete(clientId);
+  });
+});
 
 // Очистка неактивных пиров
-setInterval(cleanupInactivePeers, 5 * 60 * 1000);
-
-function cleanupInactivePeers() {
+setInterval(() => {
   const now = Date.now();
   const timeout = 5 * 60 * 1000;
   
@@ -176,7 +141,7 @@ function cleanupInactivePeers() {
       console.log(`Removed inactive peer: ${peerId}`);
     }
   });
-}
+}, 5 * 60 * 1000);
 
 // API Endpoints
 app.get('/health', (req, res) => {
@@ -184,32 +149,27 @@ app.get('/health', (req, res) => {
     status: 'OK',
     activePeers: activePeers.size,
     activeChatUsers: activeChatUsers.size,
-    uptime: process.uptime(),
-    memoryUsage: process.memoryUsage()
+    uptime: process.uptime()
   });
 });
 
-app.get('/ping', handlePingRequest);
-app.get('/online-count', handleOnlineCountRequest);
-app.get('/find-partner', handleFindPartnerRequest);
-
-function handlePingRequest(req, res) {
+app.get('/ping', (req, res) => {
   const peerId = req.query.peerId;
   if (peerId && activePeers.has(peerId)) {
     activePeers.set(peerId, Date.now());
   }
   res.sendStatus(200);
-}
+});
 
-function handleOnlineCountRequest(req, res) {
+app.get('/online-count', (req, res) => {
   res.json({
     success: true,
     count: activePeers.size,
     timestamp: Date.now()
   });
-}
+});
 
-function handleFindPartnerRequest(req, res) {
+app.get('/find-partner', (req, res) => {
   try {
     const myId = req.query.myId;
     
@@ -220,18 +180,35 @@ function handleFindPartnerRequest(req, res) {
       });
     }
 
+    // Обновляем активность текущего пира
     activePeers.set(myId, Date.now());
-    const partnerId = findAvailablePartner(myId);
 
-    if (!partnerId) {
+    // Ищем доступных партнеров
+    const availablePeers = [];
+    const now = Date.now();
+    const maxInactiveTime = 30000; // 30 секунд
+
+    activePeers.forEach((lastActive, peerId) => {
+      if (peerId !== myId && (now - lastActive) < maxInactiveTime) {
+        availablePeers.push(peerId);
+      }
+    });
+
+    if (availablePeers.length === 0) {
       return res.status(200).json({
         error: 'Нет доступных собеседников',
         code: 'NO_PARTNERS',
         retryAfter: 5
       });
     }
+
+    // Выбираем случайного партнера
+    const partnerId = availablePeers[Math.floor(Math.random() * availablePeers.length)];
     
-    res.json({ partnerId, timestamp: Date.now() });
+    res.json({ 
+      partnerId,
+      timestamp: Date.now()
+    });
 
   } catch (err) {
     console.error('Ошибка поиска партнера:', err);
@@ -240,42 +217,24 @@ function handleFindPartnerRequest(req, res) {
       code: 'SERVER_ERROR'
     });
   }
-}
+});
 
-function findAvailablePartner(myId) {
-  const now = Date.now();
-  const maxInactiveTime = 30000;
-  const availablePeers = [];
+// Frontend
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
-  activePeers.forEach((lastActive, peerId) => {
-    if (peerId !== myId && (now - lastActive) < maxInactiveTime) {
-      availablePeers.push(peerId);
-    }
-  });
-
-  return availablePeers.length > 0 
-    ? availablePeers[Math.floor(Math.random() * availablePeers.length)]
-    : null;
-}
-
-// Обработка ошибок и завершение работы
+// Error handling
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-process.on('SIGTERM', gracefulShutdown);
-
-function gracefulShutdown() {
+// Graceful shutdown
+process.on('SIGTERM', () => {
   console.log('SIGTERM received. Shutting down gracefully...');
-  
-  // Закрываем WebSocket соединения
-  wss.clients.forEach(client => client.close());
-  wss.close();
-  
-  // Закрываем HTTP сервер
   server.close(() => {
     console.log('HTTP server closed');
     process.exit(0);
   });
-}
+});
