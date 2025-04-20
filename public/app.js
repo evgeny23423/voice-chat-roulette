@@ -7,11 +7,7 @@ const config = {
   },
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:global.stun.twilio.com:3478'}
-    { urls: 'turn:your-turn-server.com:3478'},
-	{username: 'your-username'},
-	{credential: 'your-credential'} 
-	
+    { urls: 'stun:global.stun.twilio.com:3478' }
   ],
    chatServer: {
     url: 'https://web-production-175e.up.railway.app/chat',
@@ -332,36 +328,6 @@ function setupCall(call) {
     endCall();
   });
 }
-async function initializePeerConnection() {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  
-  const peerOptions = {
-    config: config.peerServer,
-    iceServers: config.iceServers,
-    // Общие настройки для всех устройств
-    debug: 2, // Базовый уровень логов
-    pingInterval: 5000
-  };
-   if (isMobile) {
-    Object.assign(peerOptions, {
-      debug: 3, // Подробные логи
-      pingInterval: 3000, // Более частые пинги
-      iceTransportPolicy: 'relay' // Используем только TURN для NAT traversal
-    });
-  }
-
-  return new Promise((resolve, reject) => {
-    try {
-      state.peer = new Peer(peerOptions);
-
-      state.peer.on('open', (id) => {
-        console.log('Peer connection established with ID:', id);
-        state.myId = id;
-        updatePeerIdDisplay(id);
-        updateStatus('connected');
-	  })
-	};  	  
-
 
 // Завершение звонка
 function endCall() {
@@ -487,4 +453,3 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
   await checkServer();
-});
