@@ -122,27 +122,117 @@
       <input type="text" id="messageInput" placeholder="Написать сообщение..." class="text-input">
       <button id="sendMessageBtn" class="primary-button small">Отправить</button>
     </div>
-  </div>
-</section>
-    </main>
+ <!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎤 Voice Roulette САНЕК - Голосовая чат-рулетка поиск девушек </title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="logo-container">
+        <div class="logo-icon">🎤</div>
+        <h1>Voice Roulette САНЕК</h1>
+      </div>
+      <p class="app-subtitle">Анонимные голосовые инцел знакомства</p>
+    </header>
+
+    <main class="app-content">
+      <section class="profile-card card">
+        <div class="card-header">
+          <h2>Ваш профиль</h2>
+          <div class="status-badge" id="status">
+            <span class="status-dot"></span>
+            <span class="status-text">Отключен</span>
+          </div>
+        </div>
+		<div class="online-counter" id="onlineCounter">
+       <span class="online-dot"></span>
+        <span class="online-text">Загрузка...</span>
+        </div>
+        <div class="profile-content">
+          <div class="id-display">
+            <span class="id-label">Ваш ID:</span>
+            <div class="id-value-container">
+              <code id="myId">Загрузка...</code>
+              <button id="copyIdBtn" class="icon-button" aria-label="Копировать ID">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+                  <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="call-controls card">
+        <div class="card-header">
+          <h2>Начать общение</h2>
+        </div>
+        <div class="controls-content">
+          <div class="input-with-button">
+            <input type="text" id="partnerId" placeholder="Введите ID собеседника" class="text-input">
+            <button id="callBtn" class="primary-button">
+              <span class="button-icon">📞</span>
+              Позвонить
+            </button>
+          </div>
+          <div class="divider">
+            <span>или</span>
+          </div>
+          <button id="findRandomBtn" class="secondary-button large-button">
+            <span class="button-icon">🎲</span>
+            Найти случайного собеседника инцела 
+          </button>
+          <div id="searchSpinner" class="search-loader hidden">
+            <div class="spinner"></div>
+            <span>Ищем интересного собеседника...</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="activeCallPanel" class="active-call card hidden">
+	  
+	  
+        <div class="card-header">
+          <h2>Текущий звонок</h2>
+        </div>
+        <div class="call-content">
+          <div class="call-info">
+            <div class="info-item">
+              <span class="info-label">Собеседник:</span>
+              <span id="partnerIdDisplay" class="info-value">Не указан</span>
+            </div>
+            <div class="call-timer">
+              <span id="callDuration">00:00</span>
+            </div>
+          </div>
+          <div class="call-actions">
+            <button id="muteBtn" class="icon-button large">
+              <span class="button-icon">🎤</span>
+              <span class="button-text">Вкл/Выкл микрофон</span>
+            </button>
+            <button id="hangupBtn" class="danger-button">
+              <span class="button-icon">📞</span>
+              Завершить звонок
+            </button>
+          </div>
+          <audio id="remoteAudio" autoplay></audio>
+        </div> 
+	  </section>
+
+  </main>
 
     <footer class="app-footer">
       <p>© 2025 Voice Roulette | Анонимные голосовые чаты</p>
     </footer>
-  </div>
- <div id="custom-chat-container" style="
-  position: fixed;
-  bottom: 100px;    /* Отступ от нижнего края */
-  left: 50%;       /* Центрирование по горизонтали */
-  transform: translateX(-43%); /* Корректировка центра */
-  width: 90%;      /* Ширина контейнера */
-  max-width: 600px; /* Максимальная ширина */
-  height: 300px;   /* Высота контейнера */
-  background: white;
-  z-index: 1000;
-">
+ 
+ <div id="custom-chat-container" style="position: fixed; left: 0; top: 50%; transform: translateY(-50%); width: 300px; height: 500px;">
   <div id="chat_xikkaincelchat" style="width: 100%; height: 100%;"></div>
-</div>
   <script type="text/javascript">
   var chatovodOnLoad = chatovodOnLoad || [];
   chatovodOnLoad.push(function() {
@@ -167,10 +257,6 @@
 </div>
  
   <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
- <script src="app.js"></script>
-  <footer class="app-footer">
-      <p>© 2025 Voice Roulette | Анонимные голосовые чаты</p>
-    </footer>
- 
+  <script src="app.js"></script>
 </body>
 </html>

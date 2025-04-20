@@ -453,3 +453,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
   await checkServer();
+});
